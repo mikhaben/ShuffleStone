@@ -1,0 +1,25 @@
+## Interface: 120100
+## Title: ShuffleStone
+## Notes: Randomize hearthstone toys with custom lists
+## Author: asp1d
+## Version: 1.0.0
+## IconTexture: Interface\Icons\inv_misc_rune_01
+## SavedVariables: ShuffleStoneDB
+
+# Libraries
+Libs/LibStub/LibStub.lua
+Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
+
+# Core
+Core.lua
+Data.lua
+
+# Toy Engine
+ToyEngine/Scanner.lua
+ToyEngine/Rotation.lua
+ToyEngine/Buttons.lua
+
+# UI
+UI/IconGrid.lua
+UI/ListEditor.lua
+UI/MainFrame.lua
