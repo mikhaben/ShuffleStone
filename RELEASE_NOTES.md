@@ -23,13 +23,3 @@
 - **Combat Safety** — Uses SecureActionButton for safe toy casting during raids and dungeons.
 
 - **Persistent Storage** — All custom lists and rotation state saved across WoW sessions.
-
-### Commands
-
-- `/ss` — Toggle the main window
-- `/ss debug` — Print debug info (owned toys, lists, macros, rotation state)
-
-### Compatibility
-
-- **WoW Version:** Midnight (12.0+)
-- **Interface Version:** 120000
