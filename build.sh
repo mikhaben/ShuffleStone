@@ -27,7 +27,11 @@ mkdir -p "${STAGE_DIR}"
 
 # Core addon files
 echo "Copying addon files..."
-cp "$TOC_FILE" Core.lua Data.lua "${STAGE_DIR}/"
+cp "$TOC_FILE" Core.lua Data.lua Constants.lua "${STAGE_DIR}/"
+
+# Assets
+echo "Copying assets..."
+cp -r Assets "${STAGE_DIR}/"
 
 # ToyEngine
 echo "Copying ToyEngine..."

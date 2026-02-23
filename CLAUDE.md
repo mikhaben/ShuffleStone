@@ -7,34 +7,38 @@ ShuffleStone is a World of Warcraft addon that randomizes hearthstone toys using
 ## Commands
 
 - `/ss` or `/shufflestone` — Toggle the main window visibility
-- `/ss debug` — Toggle debug mode for verbose logging
-- `/ss scan` — Force rescan of toy ownership from the toy box
+- `/ss debug` — Print debug info (owned toys, lists, macros, rotation state)
 
 ## Architecture Overview
 
-ShuffleStone uses a modular architecture with five main components:
+ShuffleStone uses a modular architecture with six main components:
 
 1. **Core System** (Core.lua) — Namespace initialization, SavedVariables management, event handling, slash commands
-2. **Data Registry** (Data.lua) — Toy ID constants, default icon IDs, shared configuration
-3. **Toy Engine** — Rotation algorithm, toy ownership scanning, secure button/macro creation
-4. **UI System** — Floating window, icon grid, list editor, dropdown selection
-5. **Libraries** — LibStub and CallbackHandler for addon communication
+2. **Data Registry** (Data.lua) — Toy ID constants, spell IDs, toy metadata
+3. **Constants Module** (Constants.lua) — Centralized UI constants, textures, colors, and shared helper functions
+4. **Toy Engine** — Rotation algorithm, toy ownership scanning, secure button/macro creation
+5. **UI System** — Floating window, settings panel, icon grid, list editor, dropdown selection
+6. **Libraries** — LibStub and CallbackHandler for addon communication
 
 ## Project Structure
 
 ```
 ShuffleStone/
-├── ShuffleStone.toc          # TOC metadata file: interface version 120100, load order
+├── ShuffleStone.toc          # TOC metadata: interface 120000, load order, author, version
 ├── Core.lua                  # Main namespace (NS), DB init, events, slash command handler
-├── Data.lua                  # Toy registry (32 items), constant definitions (icons, IDs)
+├── Data.lua                  # Toy registry (all hearthstones), toy IDs, spell IDs, metadata
+├── Constants.lua             # Centralized UI constants, textures, colors, helper functions
 ├── ToyEngine/
-│   ├── Scanner.lua           # PlayerHasToy scanning, C_ToyBox integration, ownership tracking
-│   ├── Rotation.lua          # Shuffle-bag rotation engine, UNIT_SPELLCAST_SUCCEEDED handler
+│   ├── Scanner.lua           # PlayerHasToy scanning, C_ToyBox integration, owned toy detection
+│   ├── Rotation.lua          # No-repeat shuffle-bag rotation with anti-repeat fix
 │   └── Buttons.lua           # SecureActionButton creation, macro management, attribute binding
 ├── UI/
-│   ├── IconGrid.lua          # Reusable icon grid component, wrapping flow layout, pooling
+│   ├── IconGrid.lua          # Reusable icon grid, wrapping flow layout, pooling, buffers
 │   ├── ListEditor.lua        # List editor row: macro icon, name edit, icon picker, delete
-│   └── MainFrame.lua         # Custom floating window, two-zone grid, dropdown, callbacks
+│   ├── MainFrame.lua         # Custom floating window, two-zone grid, dropdown, callbacks
+│   └── Settings.lua          # Settings panel for addon configuration
+├── Assets/
+│   └── logo.tga              # Custom addon icon
 ├── Libs/
 │   ├── LibStub/              # Stub library loader
 │   │   └── LibStub.lua
@@ -55,7 +59,7 @@ ShuffleStoneDB = {
         {
             name = "All Hearthstones",
             icon = 134414,
-            toyIDs = { 6948, 54452, 109739, ... }  -- 32 total possible
+            toyIDs = { 6948, 54452, 109739, ... }
         },
         {
             name = "Favorites",
@@ -87,38 +91,122 @@ ShuffleStoneDB = {
 ### TOC File (ShuffleStone.toc)
 
 ```
-## Interface: 120100
+## Interface: 120000
 ## Title: ShuffleStone
+## Notes: Randomize hearthstone toys with custom lists
+## Author: justLuther
 ## Version: 1.0.0
-## Author: asp1d
+## IconTexture: Interface\AddOns\ShuffleStone\Assets\logo
 ## SavedVariables: ShuffleStoneDB
-## SavedVariablesPerCharacter: ShuffleStoneCharDB
 
+# Libraries
 Libs/LibStub/LibStub.lua
 Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
+
+# Core
 Data.lua
+Constants.lua
 Core.lua
+
+# Toy Engine
 ToyEngine/Scanner.lua
 ToyEngine/Rotation.lua
 ToyEngine/Buttons.lua
+
+# UI
 UI/IconGrid.lua
 UI/ListEditor.lua
 UI/MainFrame.lua
+UI/Settings.lua
 ```
+
+**Load Order:** Libraries → Data → Constants → Core → ToyEngine → UI
+
+The Constants module must load after Data but before Core and all UI modules so that shared constants are available throughout the addon.
+
+## Constants Module (Constants.lua)
+
+Centralizes all shared constants to reduce duplication across modules. Loaded after Data.lua but before Core.lua to ensure availability throughout the addon.
+
+### Macro Naming
+
+```lua
+NS.MACRO_PREFIX = "SS: "                    -- Macro name prefix
+NS.MACRO_ALL_NAME = "SS: All"               -- Default "all hearthstones" macro name
+NS.MacroNameForList(listName)               -- Returns "SS: " .. listName
+```
+
+### Layout Constants
+
+```lua
+NS.WINDOW_WIDTH = 420                       -- Main window width in pixels
+NS.WINDOW_HEIGHT = 480                      -- Main window height in pixels
+NS.SECTION_GAP = 16                         -- Gap between window zones in pixels
+NS.ICON_SIZE = 40                           -- Individual icon button size
+NS.ICON_GAP = 6                             -- Gap between icon buttons
+NS.BADGE_SIZE = 14                          -- Size of checkmark/lock badges
+NS.GRID_FALLBACK_WIDTH = 392                -- Fallback grid width (WINDOW_WIDTH - 28)
+```
+
+### Texture Constants
+
+```lua
+NS.TEX_CHECKMARK = "Interface\\RaidFrame\\ReadyCheck-Ready"
+NS.TEX_LOCK = "Interface\\LFGFrame\\UI-LFG-ICON-LOCK"
+NS.TEX_REMOVE = "Interface\\RaidFrame\\ReadyCheck-NotReady"
+NS.TEX_ADD = "Interface\\PaperDollInfoFrame\\Character-Plus"
+NS.TEX_SLOT_BORDER = "Interface\\Buttons\\UI-Quickslot2"
+NS.TEX_HIGHLIGHT = "Interface\\Buttons\\ButtonHilight-Square"
+NS.TEX_TRASH_NORMAL = "Interface\\Buttons\\UI-GroupLoot-Pass-Up"
+NS.TEX_TRASH_HIGHLIGHT = "Interface\\Buttons\\UI-GroupLoot-Pass-Highlight"
+NS.ICON_TEXCOORD = { 0.08, 0.92, 0.08, 0.92 }  -- Texture coordinate crop
+```
+
+### Color Constants
+
+```lua
+NS.COLOR_GREEN = { 0.3, 1, 0.3 }            -- Bright green for checkmarks
+NS.COLOR_GREEN_DIM = { 0.3, 0.7, 0.3 }      -- Dimmed green
+NS.COLOR_GRAY = { 0.5, 0.5, 0.5 }           -- Neutral gray
+NS.COLOR_LABEL_GRAY = { 0.8, 0.8, 0.8 }     -- Light gray for labels
+NS.COLOR_WHITE = { 1, 1, 1 }                -- White
+NS.COLOR_YELLOW = { 1, 0.82, 0 }            -- Bright yellow
+NS.COLOR_RED = { 1, 0.3, 0.3 }              -- Error red
+NS.COLOR_BLUE_INFO = { 0.27, 0.67, 1 }      -- Info blue
+```
+
+### Helper Functions
+
+**`NS.IsDynamicIcon(listKey)`** — Check if a list uses dynamic icon display
+- For "__all__": Returns NS.db.dynamicIcon (default true)
+- For named lists: Returns list.dynamicIcon (default true)
+- Used to determine if macro icon changes when list contents change
+
+**`NS.SetMacroIcon(listKey, icon)`** — Update macro icon (combat-safe)
+- No-op if in combat (InCombatLockdown)
+- Looks up macro by listKey, calls EditMacro with new icon
+- Used when list icon is changed or toys are added/removed
 
 ## Key Constants (Data.lua)
 
 ```lua
 NS.DEFAULT_ICON = 134414                    -- Hearthstone icon texture ID
 NS.BASE_HEARTHSTONE_ID = 6948               -- Original hearthstone toy ID
-NS.HEARTHSTONE_SPELL_ID = 8690              -- Hearthstone spell (used for UNIT_SPELLCAST_SUCCEEDED)
-NS.GRID_COLUMNS = 5                         -- Icon grid layout width
-NS.ICON_SIZE = 40                           -- Individual icon button size
-NS.ICON_POOL_SIZE = 40                      -- Pre-allocated icon button pool
-NS.MAX_HEARTHSTONES = 32                    -- Maximum supported hearthstone toys
+NS.HEARTHSTONE_SPELL_ID = 8690              -- Hearthstone spell ID (used for UNIT_SPELLCAST_SUCCEEDED)
 ```
 
-The addon supports exactly 32 hearthstone toys (HOME hearthstones only, no Dalaran/Garrison variants).
+The addon supports all HOME hearthstone toys (no Dalaran/Garrison variants). The list is maintained in Data.lua and updated as new hearthstones are added to the game.
+
+### Toy Registry Structure
+
+Each toy entry in the registry contains:
+```lua
+{
+    toyID = 6948,                           -- Unique toy ID from WoW
+    spellID = 8690,                         -- Associated spell ID for casting
+    name = "Hearthstone"                    -- Display name
+}
+```
 
 ## Core Module (Core.lua)
 
@@ -156,20 +244,21 @@ SLASH_SHUFFLESTONE2 = "/shufflestone"
 
 Handler switches on subcommand:
 - No args: Toggle window
-- "debug": Toggle debug mode
-- "scan": Force toy scan
+- "debug": Print debug info dump (owned toys, lists, macros, rotation state)
 
-### Debug Logging
+### Debug Info (`/ss debug`)
 
-When debugMode is true, the addon logs:
-- List operations (create, rename, delete)
-- Toy additions/removals
-- Rotation state changes
-- Macro creation/deletion
+Prints a diagnostic dump to chat:
+- Addon version
+- Owned hearthstone count
+- Custom list details (name, toy count, owned count)
+- Macro status (OK or MISSING for each)
+- Secure button count
+- Rotation state per list (remaining count, lastUsed)
 
 ## Data Module (Data.lua)
 
-Defines the complete registry of 32 supported HOME hearthstones with toy IDs, spell IDs, and item names.
+Defines the complete registry of all supported HOME hearthstones with toy IDs and item names. Each entry is used by Scanner.lua to validate toy ownership and by Rotation.lua to manage toy pools.
 
 Example entries:
 ```lua
@@ -185,10 +274,11 @@ Example entries:
 }
 ```
 
-Also exports shared constants used throughout the codebase:
-- DEFAULT_ICON (hearthstone texture ID)
-- BASE_HEARTHSTONE_ID
-- HEARTHSTONE_SPELL_ID
+Exports core toy system constants:
+- DEFAULT_ICON (hearthstone texture ID for UI)
+- BASE_HEARTHSTONE_ID (original toy ID)
+- HEARTHSTONE_SPELL_ID (spell ID for rotation tracking)
+- HEARTHSTONE_TOYS (master toy registry table)
 
 ## Toy Engine
 
@@ -210,26 +300,46 @@ The scanner supports both pre-Shadowlands (PlayerHasToy) and modern (C_ToyBox) A
 
 ### Rotation (ToyEngine/Rotation.lua)
 
-Implements the shuffle-bag rotation algorithm for no-repeat toy selection.
+Implements the shuffle-bag rotation algorithm for no-repeat toy selection with anti-repeat safeguards.
 
 **Key Functions:**
 
-- `NS.Rotation:PickToy(listName)` — Returns next toy ID using shuffle-bag algorithm
-  - If remaining list is empty, resets with all toys from the list
-  - Performs swap-and-pop: moves selected toy to end, removes it
-  - Updates rotationState[listName].remaining in-place
-  - Stores lastUsed for UI feedback
+- `NS.PickNextToy(listKey)` — Returns next toy ID using shuffle-bag algorithm
+  - listKey is "__all__" or a list name
+  - Returns nil if no toys available
+  - Returns single toy immediately if pool has only 1 toy
+  - Refills rotation pool from owned toys when empty
+  - Applies anti-repeat: moves lastUsed to end of array to exclude it from next pick
+  - Performs swap-and-pop: removes selected toy, updates remaining in-place
+  - Updates lastUsed for next cycle refill
 
-- `NS.Rotation:GetRotationState(listName)` — Returns current {remaining, lastUsed} for UI
+- `NS.ResetRotation(listKey)` — Clears remaining toys for a list (used when list contents change)
 
-- `NS.Rotation:ResetRotation(listName)` — Clears rotation state for a list (used when list contents change)
+- `NS.ResetAllRotations()` — Wipes all rotation state (used on fresh scans)
 
-**UNIT_SPELLCAST_SUCCEEDED Handler:**
+**Anti-Repeat Fix (Production Readiness):**
 
-Listens for spell ID 8690 (hearthstone) and advances rotation:
-1. Confirms successful cast via UNIT_SPELLCAST_SUCCEEDED
-2. Updates rotation state to mark toy as used
-3. Pre-selects next toy into button attribute for next press
+After cycle refill, lastUsed is now correctly placed at the END of the remaining array, then excluded from the random pick range via `pickMax = #state.remaining - 1`. This prevents immediate repetition when cycling back to previously used toys.
+
+```lua
+-- During refill: move lastUsed to end
+if state.lastUsed and #state.remaining > 1 then
+    for i, id in ipairs(state.remaining) do
+        if id == state.lastUsed then
+            state.remaining[i] = state.remaining[#state.remaining]
+            state.remaining[#state.remaining] = id
+            break
+        end
+    end
+end
+
+-- During pick: exclude last element if it matches lastUsed
+local pickMax = #state.remaining
+if pickMax > 1 and state.remaining[pickMax] == state.lastUsed then
+    pickMax = pickMax - 1
+end
+local idx = math.random(1, pickMax)
+```
 
 **Pre-Selection Pattern:**
 
@@ -241,28 +351,42 @@ This prevents the "PreClick" handler from advancing rotation before confirming t
 
 ### Buttons (ToyEngine/Buttons.lua)
 
-Creates and manages SecureActionButton instances for each custom list.
+Creates and manages SecureActionButton instances and macros for each custom list.
 
 **Key Functions:**
 
-- `NS.Buttons:CreateButton(macroName, toyID)` — Creates SecureActionButton with toy type
+- `NS.Buttons:CreateButton(listKey, toyID)` — Creates SecureActionButton with toy type
   - Sets button:SetAttribute("type", "toy")
   - Sets button:SetAttribute("toy", toyID)
   - Registers for secure updates
-  - Returns button for macro icon retrieval
+  - Uses pooling to reuse buttons across list switches
+  - Returns button for icon/texture retrieval
 
-- `NS.Buttons:CreateMacro(listName, icon)` — Creates WoW macro linked to toy button
-  - Uses CreateMacro() API
-  - Stores macro name in list metadata
+- `NS.Buttons:CreateMacro(listKey, icon)` — Creates WoW macro linked to toy button
+  - Macro name = NS.MacroNameForList(listKey) (from Constants.lua)
+  - Uses CreateMacro() API with icon texture
+  - Stores macro name in NS.macroNames[listKey]
   - Returns macro name for action bar dragging
 
-- `NS.Buttons:UpdateButtonToy(macroName, toyID)` — Changes toy on existing button
+- `NS.Buttons:UpdateButtonToy(listKey, toyID)` — Changes toy on existing button
   - Calls button:SetAttribute("toy", toyID) to update
   - Pre-selects new toy for next press
+  - Updates macro icon via NS.SetMacroIcon if dynamic icon enabled
 
 - `NS.Buttons:DeleteMacro(macroName)` — Cleans up macro on list deletion
   - Uses DeleteMacro() API
-  - Validates macro exists first
+  - Validates macro exists via GetMacroIndexByName first
+
+**Button Pooling & Validation (Memory Optimization):**
+
+Buttons maintains a pool of SecureActionButton instances reused across list switches. Validation uses an in-place filtering pattern with reusable validatePoolSet buffer to minimize allocations.
+
+**Macro Naming Convention:**
+
+All macros are named with prefix "SS: " (NS.MACRO_PREFIX) for easy identification:
+- "__all__" list → "SS: All"
+- "Favorites" list → "SS: Favorites"
+- "Raid Night" list → "SS: Raid Night"
 
 The button hybrid approach avoids the 255-character macro limit by using SecureActionButton attributes instead of embedding toy IDs in macro text.
 
@@ -270,114 +394,151 @@ The button hybrid approach avoids the 255-character macro limit by using SecureA
 
 ### Icon Grid (UI/IconGrid.lua)
 
-Reusable component for displaying icons in a wrapping grid layout.
+Reusable component for displaying hearthstone icons in a wrapping grid layout.
 
 **Key Functions:**
 
-- `NS.IconGrid:Create(parent, numColumns, iconSize, numIcons)` — Builds icon grid container
-  - Pre-allocates numIcons buttons (pooling pattern)
+- `NS.IconGrid:Create(parent)` — Builds icon grid container
+  - Uses NS.WINDOW_WIDTH and NS.GRID_FALLBACK_WIDTH from Constants.lua
+  - Pre-allocates 40 icon buttons (pooling pattern for reuse)
   - Returns grid table with methods
+  - Sets up texture coordinates using NS.ICON_TEXCOORD
 
-- `grid:Populate(toyIDs, onClickFn)` — Populates grid with toy icons
+- `grid:Populate(toyIDs, selectedToys, onClickFn)` — Populates grid with toy icons
   - Shows first len(toyIDs) buttons, hides rest
+  - Marks selected toys with checkmark badge using NS.TEX_CHECKMARK
+  - Marks unobtained toys with lock badge using NS.TEX_LOCK
   - Attaches click handler to each button
   - Queries C_ToyBox.GetToyInfo() for icons and tooltips
 
 - `grid:Refresh()` — Updates icon display (e.g., when ownership changes)
-  - Recalculates grid dimensions
-  - Re-applies icons and click handlers
+  - Recalculates grid dimensions using icon size and gap from Constants
+  - Re-applies icons, badges, and click handlers
+  - Uses pre-allocated ownedToysBuffer to avoid allocations
 
 **Icon Button Pool:**
 
 40 buttons are pre-created and reused:
-- Buttons 1..numRequired are shown
+- Buttons 1..numRequired are shown with NS.ICON_SIZE and NS.ICON_GAP spacing
 - Buttons numRequired+1..40 are hidden
 - No buttons are destroyed or created after initialization
 - Hover state managed via GameTooltip
+- Icon size (NS.ICON_SIZE = 40) and badge size (NS.BADGE_SIZE = 14) from Constants.lua
 
 **Zero-Allocation Pattern:**
 
-Grid refresh uses pre-allocated buffer tables (topToysBuffer, listsBuffer) to avoid garbage collection pauses during gameplay.
+Grid operations use pre-allocated buffer tables (ownedToysBuffer, listsBuffer, topToysBuffer) instead of creating new tables on each call. This reduces garbage collection pressure during the 40 icon button refresh loop.
 
 ### List Editor (UI/ListEditor.lua)
 
-Row component for managing a single list within the editor.
+Row component for managing a single list within the editor. Uses Constants.lua for colors, textures, and sizing.
 
 **Components (left to right):**
 
-1. **Macro Icon** (draggable) — Drag to action bar; visual indicator of macro
-2. **List Name** — Editable text field (FontString in edit mode)
-3. **Change Icon Button** — Opens icon picker dialog
-4. **Delete Button** — Removes list with confirmation
+1. **Macro Icon** (draggable) — Drag to action bar; visual indicator of macro with border (NS.TEX_SLOT_BORDER)
+2. **List Name** — Editable text field (FontString in edit mode) with light gray label (NS.COLOR_LABEL_GRAY)
+3. **Change Icon Button** — Opens icon picker to customize hearthstone icon texture
+4. **Delete Button** — Removes list with confirmation using trash icons (NS.TEX_TRASH_NORMAL/HIGHLIGHT)
 
 **Key Functions:**
 
 - `NS.ListEditor:CreateRow(parent, list)` — Creates styled row with BackdropTemplate
+  - Uses NS.SECTION_GAP, NS.ICON_SIZE, NS.COLOR_* constants from Constants.lua
   - Returns row table with methods
 
 - `row:UpdateMacroIcon()` — Fetches macro icon and updates display
-  - Queries GetMacroInfo() by macro name
-  - Updates texture
+  - Queries GetMacroInfo() by macro name (from NS.macroNames)
+  - Updates texture from macro data
+  - Uses NS.ICON_TEXCOORD for texture coordinates
 
 - `row:RenameList(newName)` — Renames list
   - Validates name not in use
   - Saves rotation state before destroying old macro
-  - Creates new macro with updated name
-  - Updates list metadata
+  - Creates new macro using NS.MacroNameForList(newName)
+  - Updates list metadata in DB
 
 - `row:DeleteList()` — Removes list
   - Deletes associated macro
   - Removes from lists table
-  - Triggers UI refresh
+  - Triggers UI refresh callback
 
 **Design Pattern:**
 
-All destructive operations check `InCombatLockdown()` to prevent macro/button changes during combat.
+All destructive operations check `InCombatLockdown()` to prevent macro/button changes during combat. If called during combat, operation is queued for PLAYER_REGEN_ENABLED event.
 
 ### Main Frame (UI/MainFrame.lua)
 
-Custom floating window with all UI components integrated.
+Custom floating window with all UI components integrated. Uses Constants.lua for layout, textures, and colors.
 
 **Components:**
 
-1. **Header Bar** — Title "ShuffleStone" with close button
+1. **Header Bar** — Title "ShuffleStone" with close button, sized NS.WINDOW_WIDTH × NS.WINDOW_HEIGHT
 2. **List Dropdown** — UIDropDownMenuTemplate for list selection
-3. **Zone 1: Toy Grid** — Icon grid showing toys in current list
-4. **Show Unobtained Checkbox** — Filters owned vs all toys
-5. **Zone 2: Editor Grid** — List editor rows (scrollable)
-6. **Add List Button** — Creates new list with default settings
+3. **Zone 1: Toy Grid** — Icon grid showing toys in current list (NS.IconGrid)
+4. **Show Unobtained Checkbox** — Filters owned vs all toys (NS.COLOR_LABEL_GRAY text)
+5. **Zone 2: Editor Grid** — List editor rows (scrollable, NS.SECTION_GAP spacing)
+6. **Add List Button** — Creates new list with plus icon (NS.TEX_ADD)
 
 **Key Functions:**
 
 - `NS.MainFrame:Create()` — Builds main window
-  - Uses BasicFrameTemplateWithInset
-  - Applies WindowResizingTemplate
-  - Creates grid layout with two zones
+  - Uses BasicFrameTemplateWithInset with custom inset texture from Assets/logo
+  - Applies WindowResizingTemplate for resizing capability
+  - Creates grid layout with two zones separated by NS.SECTION_GAP
+  - Sets initial position from SavedVariables windowPos
   - Returns frame for event binding
 
-- `frame:SelectList(listName)` — Switches active list
-  - Updates dropdown display
-  - Refreshes toy grid with new list's toys
+- `NS.GetSelectedListKey()` / `NS.SetSelectedListKey(key)` — Getter/setter for active list key
+  - Exposes selectedListKey state for global access
+  - Key is "__all__" or a list name
+
+- `frame:SelectList(listKey)` — Switches active list
+  - Updates dropdown display via mainFrame.dropdown:SetText()
+  - Refreshes toy grid with new list's toys and selected badges
   - Updates rotation state display
 
 - `frame:AddToyToList(toyID)` — Adds toy to current list
-  - Updates rotationState (resets shuffle bag)
+  - Updates rotationState (resets shuffle bag via NS.ResetRotation)
   - Refreshes grid display
+  - Updates macro via NS.SetMacroIcon if dynamic icon enabled
 
 - `frame:RemoveToyFromList(toyID)` — Removes toy
   - Resets rotation state for affected list
-  - Updates grid
+  - Updates grid display
+  - Updates macro via NS.SetMacroIcon
 
 - `frame:SetListIcon(newIcon)` — Changes list's hearthstone icon
-  - Updates macro display
+  - Updates macro display via NS.SetMacroIcon
   - Persists to SavedVariables
+
+**Global Frame Reference Fix (Production Readiness):**
+
+Fixed reference from `ShuffleStoneListDropdown:SetText()` to `mainFrame.dropdown:SetText()` to use correct frame handle and avoid global namespace pollution.
 
 **Callback Integration:**
 
 Frame registers with CallbackHandler to receive toy/list change events:
-- When list is renamed, grid title updates
-- When toy is added/removed, grid refreshes
-- When list is deleted, dropdown updates and switches to default
+- When list is renamed, grid title and macro name update
+- When toy is added/removed, grid refreshes and rotation resets
+- When list is deleted, dropdown updates and switches to "__all__" list
+
+**Memory Optimization:**
+
+Uses reusable buffer tables (dropdownBuffer, iconCycleBuffer) for dropdown and icon cycle operations to avoid allocations during frequent list switches.
+
+### Settings Panel (UI/Settings.lua)
+
+Configuration interface for addon settings, accessible via /ss settings or integrated addon menu.
+
+**Configuration Options:**
+
+- **Debug Mode** — Toggle verbose logging (saved to NS.db.debugMode)
+- **Dynamic Icon** — Toggle whether macro icons update when list contents change (saved to NS.db.dynamicIcon)
+- **Show Unobtained** — Toggle display of toys player doesn't own (saved to NS.db.showUnobtained)
+
+**Design:**
+
+Settings are persisted to ShuffleStoneDB SavedVariables and can be modified in-game without UI reload.
 
 ## Key Design Decisions
 
@@ -412,9 +573,15 @@ This ensures rotation advances exactly once per successful cast.
 
 `GetListByName(name)` is used throughout to avoid duplicated linear searches through the lists table. This is especially important during dropdown population and list operations.
 
-### Reusable Buffer Tables
+### Reusable Buffer Tables (Memory Optimization)
 
-Operations like icon grid refresh use pre-allocated tables (listsBuffer, topToysBuffer) instead of creating new tables on each call. This reduces garbage collection pressure during the 40 icon button refresh loop.
+Operations use pre-allocated buffer tables to avoid garbage collection during gameplay:
+- **IconGrid**: ownedToysBuffer, listsBuffer, topToysBuffer for icon refresh loops
+- **Scanner**: ownedToysBuffer for toy ownership scans
+- **MainFrame**: dropdownBuffer, iconCycleBuffer for dropdown and icon operations
+- **Buttons**: validatePoolSet for in-place button pool validation
+
+These reusable buffers are wiped and refilled instead of allocating new tables on each call, reducing GC pressure during the 40 icon button refresh loop and frequent list selections.
 
 ### Combat Safety
 
@@ -473,8 +640,9 @@ These libraries are embedded in the Libs folder and loaded first in the TOC.
 ## Version
 
 - **Current Version:** 1.0.0
-- **WoW Interface:** 120100 (The War Within)
-- **Author:** asp1d
+- **WoW Interface:** 120000 (Midnight)
+- **Author:** justLuther
+- **Custom Icon:** Assets/logo.tga
 
 ## Build Process
 
@@ -485,8 +653,11 @@ These libraries are embedded in the Libs folder and loaded first in the TOC.
 Creates `build/ShuffleStone_<version>_<date>.zip` suitable for CurseForge upload. The script:
 1. Reads version from ShuffleStone.toc
 2. Generates timestamp
-3. Zips all addon files (excluding build directory, .git, etc.)
-4. Names output file with version and date
+3. Copies all core files (Data.lua, Constants.lua, Core.lua, etc.)
+4. Copies Assets/ directory (logo.tga)
+5. Includes Libs/ folder
+6. Zips all addon files (excluding build directory, .git, etc.)
+7. Names output file with version and date
 
 ## Related Files
 
@@ -550,20 +721,28 @@ ShuffleStone.toc
 Libs/LibStub/LibStub.lua
 Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
     ↓
-Data.lua (constants, toy registry)
+Data.lua (toy registry, toy system constants)
+    ↓
+Constants.lua (UI constants, textures, colors, helpers)
     ↓
 Core.lua (namespace, SavedVariables, events)
     ↓
 ToyEngine/
-    Scanner.lua (depends on Data, Core)
-    Rotation.lua (depends on Data, Core)
-    Buttons.lua (depends on Core)
+    Scanner.lua (depends on Data, Core; uses ownedToysBuffer)
+    Rotation.lua (depends on Core; implements PickNextToy)
+    Buttons.lua (depends on Core, Constants; macro naming, macro icons)
     ↓
 UI/
-    IconGrid.lua (depends on Core)
-    ListEditor.lua (depends on Core, Buttons)
-    MainFrame.lua (depends on IconGrid, ListEditor, Rotation, Scanner, Buttons)
+    IconGrid.lua (depends on Core, Constants; layout/texture constants)
+    ListEditor.lua (depends on Core, Constants, Buttons; row rendering)
+    MainFrame.lua (depends on IconGrid, ListEditor, Rotation, Scanner, Buttons, Constants)
+    Settings.lua (depends on Core, Constants; settings panel)
 ```
+
+**Load Order Invariants:**
+- Constants.lua must load after Data.lua but before Core.lua
+- All UI modules must load after ToyEngine modules (they depend on Rotation, Scanner, Buttons)
+- Settings.lua loads last as optional configuration UI
 
 ## Troubleshooting Notes
 
@@ -572,7 +751,7 @@ UI/
 If a toy doesn't consume from rotation:
 1. Check UNIT_SPELLCAST_SUCCEEDED is firing (enable /ss debug)
 2. Verify toy spell ID matches HEARTHSTONE_SPELL_ID in Data.lua
-3. Check rotationState[listName] is not nil (run /ss scan)
+3. Check rotationState[listName] is not nil (try `/reload`)
 
 ### Macro Not Dragging
 
@@ -586,4 +765,4 @@ If macro icon can't drag to action bar:
 If custom lists disappear on reload:
 1. Check ShuffleStoneDB in SavedVariables file
 2. Verify SavedVariables declaration in TOC
-3. Run /ss scan to force rescan and list rebuild
+3. Try `/reload` to force rescan and list rebuild

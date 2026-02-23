@@ -8,6 +8,9 @@ local AddonName, NS = ...
 NS.buttons = {}     -- { [listKey] = secureButton }
 NS.macroNames = {}  -- { [listKey] = "SS: All" or "SS: Favorites" }
 
+-- Reusable buffer for ValidateAllRotations
+local validatePoolSet = {}
+
 -- Sanitize list key for frame naming
 local function SafeName(listKey)
     return listKey:gsub("%s+", ""):gsub("[^%w]", "")
@@ -19,7 +22,7 @@ local function SetButtonToy(btn, toyID)
     local info = NS.scannedToys[toyID]
     if info and info.isToy then
         btn:SetAttribute("type", "toy")
-        btn:SetAttribute("toy", toyID)
+        btn:SetAttribute("toy", info.name)
     else
         -- Base Hearthstone is an item, not a toy
         btn:SetAttribute("type", "item")
@@ -38,32 +41,46 @@ local function CreateSecureButton(listKey)
 
     local btn = CreateFrame("Button", btnName, UIParent, "SecureActionButtonTemplate")
     btn:SetAttribute("type", "toy")
+    btn:RegisterForClicks("AnyDown")
+    btn:SetAttribute("pressAndHoldAction", true)
+    btn:SetAttribute("typerelease", "toy")
     btn:Hide()
     btn:SetSize(1, 1)
     btn.listKey = listKey
 
-    -- NOTE: No PreClick handler. The toy attribute is pre-set by PreSelectAllButtons.
-    -- PreClick was previously picking a NEW toy on each click, which caused the
-    -- previously pre-selected toy to be consumed from rotation but never used.
-    -- The correct flow is:
-    --   1. PreSelectAllButtons sets attribute to toy A (consuming A from rotation)
-    --   2. User clicks -> secure action uses toy A
-    --   3. UNIT_SPELLCAST_SUCCEEDED -> PreSelectAllButtons picks toy B, updates icon
-    --   4. User clicks -> secure action uses toy B
+    -- PostClick: after each use, queue the next random toy for the next press
+    btn:SetScript("PostClick", function(self)
+        if not InCombatLockdown() then
+            local toyID = NS.PickNextToy(self.listKey)
+            if toyID then
+                SetButtonToy(self, toyID)
+                NS.UpdateMacroIcon(self.listKey, toyID)
+            end
+        end
+    end)
 
     NS.buttons[listKey] = btn
     return btn
+end
+
+-- Build macro body for a list key
+local function BuildMacroBody(listKey)
+    local btnName = "ShuffleStone_" .. SafeName(listKey)
+    if NS.IsDynamicIcon(listKey) then
+        return "#showtooltip\n/stopcasting\n/click " .. btnName
+    else
+        return "/stopcasting\n/click " .. btnName
+    end
 end
 
 -- Create or update macro for a list
 function NS.EnsureMacro(listKey, macroDisplayName)
     if InCombatLockdown() then return end
 
-    local btnName = "ShuffleStone_" .. SafeName(listKey)
     local macroName = macroDisplayName
     NS.macroNames[listKey] = macroName
 
-    local body = "/click " .. btnName
+    local body = BuildMacroBody(listKey)
 
     local existingID = GetMacroIndexByName(macroName)
     if existingID and existingID > 0 then
@@ -77,30 +94,36 @@ function NS.EnsureMacro(listKey, macroDisplayName)
     end
 end
 
--- Update macro icon to match currently selected toy
-function NS.UpdateMacroIcon(listKey, toyID)
+-- Rebuild macro body (called when dynamic icon setting changes)
+function NS.RebuildMacroBody(listKey)
     if InCombatLockdown() then return end
     local macroName = NS.macroNames[listKey]
     if not macroName then return end
 
     local existingID = GetMacroIndexByName(macroName)
     if existingID and existingID > 0 then
-        local toyInfo = NS.scannedToys[toyID]
-        local icon = toyInfo and toyInfo.icon or NS.DEFAULT_ICON
-        EditMacro(existingID, macroName, icon)
+        local body = BuildMacroBody(listKey)
+        EditMacro(existingID, macroName, nil, body)
     end
+end
+
+-- Update macro icon to match currently selected toy
+function NS.UpdateMacroIcon(listKey, toyID)
+    if not NS.IsDynamicIcon(listKey) then return end
+    local toyInfo = NS.scannedToys[toyID]
+    NS.SetMacroIcon(listKey, toyInfo and toyInfo.icon or NS.DEFAULT_ICON)
 end
 
 -- Initialize buttons for "__all__" and each custom list
 function NS.InitializeAllButtons()
     -- "All" button
     CreateSecureButton("__all__")
-    NS.EnsureMacro("__all__", "SS: All")
+    NS.EnsureMacro("__all__", NS.MACRO_ALL_NAME)
 
     -- Custom list buttons
     for _, list in ipairs(NS.db.lists) do
         CreateSecureButton(list.name)
-        NS.EnsureMacro(list.name, "SS: " .. list.name)
+        NS.EnsureMacro(list.name, NS.MacroNameForList(list.name))
     end
 
     -- Validate persisted rotation state against current owned toys
@@ -110,7 +133,6 @@ function NS.InitializeAllButtons()
     NS.PreSelectAllButtons()
 
     -- Register events for re-selection
-    NS.EventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     NS.EventFrame:RegisterEvent("NEW_TOY_ADDED")
 end
 
@@ -119,19 +141,22 @@ function NS.ValidateAllRotations()
     for listKey, state in pairs(NS.db.rotationState) do
         if state.remaining and #state.remaining > 0 then
             local pool = NS.GetOwnedToysForList(listKey)
-            local poolSet = {}
+            wipe(validatePoolSet)
             for _, id in ipairs(pool) do
-                poolSet[id] = true
+                validatePoolSet[id] = true
             end
 
-            -- Remove IDs from remaining that aren't in current pool
-            local cleaned = {}
-            for _, id in ipairs(state.remaining) do
-                if poolSet[id] then
-                    table.insert(cleaned, id)
+            -- Remove IDs from remaining that aren't in current pool (in-place)
+            local writeIdx = 0
+            for i = 1, #state.remaining do
+                if validatePoolSet[state.remaining[i]] then
+                    writeIdx = writeIdx + 1
+                    state.remaining[writeIdx] = state.remaining[i]
                 end
             end
-            state.remaining = cleaned
+            for i = #state.remaining, writeIdx + 1, -1 do
+                state.remaining[i] = nil
+            end
         end
 
         -- Validate lastUsed
@@ -154,19 +179,6 @@ function NS.PreSelectAllButtons()
     end
 end
 
--- Handle spell cast to pre-select next toy
-function NS:UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID)
-    if unit ~= "player" then return end
-    if spellID ~= NS.HEARTHSTONE_SPELL_ID then return end
-
-    -- Delay slightly to avoid combat lockdown edge cases
-    C_Timer.After(0.5, function()
-        if not InCombatLockdown() then
-            NS.PreSelectAllButtons()
-        end
-    end)
-end
-
 -- Handle new toy added
 function NS:NEW_TOY_ADDED()
     NS.ScanToys()
@@ -179,7 +191,7 @@ end
 -- Create button + macro for a new custom list
 function NS.CreateListButton(listName)
     CreateSecureButton(listName)
-    NS.EnsureMacro(listName, "SS: " .. listName)
+    NS.EnsureMacro(listName, NS.MacroNameForList(listName))
 
     if not InCombatLockdown() then
         local toyID = NS.PickNextToy(listName)
@@ -202,7 +214,7 @@ function NS.RemoveListButton(listName)
     end
 
     if not InCombatLockdown() then
-        local macroName = "SS: " .. listName
+        local macroName = NS.MacroNameForList(listName)
         local existingID = GetMacroIndexByName(macroName)
         if existingID and existingID > 0 then
             DeleteMacro(existingID)
@@ -215,22 +227,45 @@ function NS.RemoveListButton(listName)
     end
 end
 
--- Rename a list's button and macro (destroy old, create new)
+-- Rename a list's button and macro (preserves action bar slot)
 function NS.RenameListButton(oldName, newName)
     if InCombatLockdown() then return false end
 
-    -- Save rotation state before RemoveListButton destroys it
-    local savedRotation = NS.db.rotationState[oldName]
+    -- Create new secure button with new frame name (for /click target)
+    CreateSecureButton(newName)
 
-    -- Remove old button + macro
-    NS.RemoveListButton(oldName)
+    -- Rename existing WoW macro in-place (keeps same index → action bar stays)
+    local oldMacroName = NS.macroNames[oldName]
+    if oldMacroName then
+        local macroID = GetMacroIndexByName(oldMacroName)
+        if macroID and macroID > 0 then
+            local newMacroName = NS.MacroNameForList(newName)
+            local body = BuildMacroBody(newName)
+            EditMacro(macroID, newMacroName, nil, body)
+            NS.macroNames[newName] = newMacroName
+        end
+    end
 
-    -- Create new button + macro with new name
-    NS.CreateListButton(newName)
+    -- Clean up old button (do NOT delete macro)
+    local oldBtn = NS.buttons[oldName]
+    if oldBtn then
+        oldBtn:SetAttribute("type", nil)
+        oldBtn:Hide()
+        NS.buttons[oldName] = nil
+    end
+    NS.macroNames[oldName] = nil
 
-    -- Restore saved rotation state under new key
-    if savedRotation then
-        NS.db.rotationState[newName] = savedRotation
+    -- Move rotation state to new key
+    if NS.db.rotationState[oldName] then
+        NS.db.rotationState[newName] = NS.db.rotationState[oldName]
+        NS.db.rotationState[oldName] = nil
+    end
+
+    -- Pre-select toy for new button
+    local toyID = NS.PickNextToy(newName)
+    if toyID and NS.buttons[newName] then
+        SetButtonToy(NS.buttons[newName], toyID)
+        NS.UpdateMacroIcon(newName, toyID)
     end
 
     return true
@@ -244,6 +279,11 @@ function NS.RefreshListButton(listKey)
         if toyID then
             SetButtonToy(NS.buttons[listKey], toyID)
             NS.UpdateMacroIcon(listKey, toyID)
+        else
+            -- List is empty — clear button so macro does nothing
+            NS.buttons[listKey]:SetAttribute("type", nil)
+            NS.buttons[listKey]:SetAttribute("toy", nil)
+            NS.buttons[listKey]:SetAttribute("item", nil)
         end
     end
 end

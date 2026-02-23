@@ -13,17 +13,11 @@ NS.Author = C_AddOns.GetAddOnMetadata(AddonName, "Author")
 
 -- Default saved variables structure
 NS.defaults = {
-    lists = {
-        {
-            name = "Favorites",
-            icon = 134414, -- NS.DEFAULT_ICON (not available yet at parse time)
-            toyIDs = {},   -- set: { [itemID] = true }
-        },
-    },
+    lists = {},
     rotationState = {},
     windowPos = { point = "CENTER", x = 0, y = 0 },
     showUnobtained = false,
-    debugMode = false,
+    dynamicIcon = true,
     onboardingDismissed = false,
 }
 
@@ -95,7 +89,12 @@ function NS:PLAYER_LOGIN()
         NS.Debug("UI initialized")
     end
 
-    print("|cff00ccffShuffleStone|r v" .. NS.Version .. " loaded. Type |cffffd100/ss|r to open.")
+    -- Register settings panel
+    if NS.InitializeSettings then
+        NS.InitializeSettings()
+    end
+
+    NS.Debug("v" .. NS.Version .. " loaded.")
 end
 
 -- Register events
@@ -106,19 +105,12 @@ SLASH_SHUFFLESTONE1 = "/shufflestone"
 SLASH_SHUFFLESTONE2 = "/ss"
 
 SlashCmdList["SHUFFLESTONE"] = function(msg)
-    if not NS.db then
-        print("|cffff8800ShuffleStone|r: Not yet loaded. Please wait for login to complete.")
-        return
-    end
+    if not NS.db then return end
 
     msg = msg:lower():trim()
 
     if msg == "debug" then
-        NS.db.debugMode = not NS.db.debugMode
-        print("|cff00ccffShuffleStone|r: Debug mode " .. (NS.db.debugMode and "ON" or "OFF"))
-    elseif msg == "scan" then
-        NS.ScanToys()
-        print("|cff00ccffShuffleStone|r: Toy scan complete. " .. #NS.ownedToyIDs .. " owned.")
+        NS.PrintDebugInfo()
     else
         if NS.ToggleMainFrame then
             NS.ToggleMainFrame()
@@ -126,15 +118,51 @@ SlashCmdList["SHUFFLESTONE"] = function(msg)
     end
 end
 
--- Debug helpers
-function NS.Debug(msg)
-    if NS.db and NS.db.debugMode then
-        print("|cff00ff00[SS]|r " .. msg)
+-- Debug info dump (/ss debug)
+function NS.PrintDebugInfo()
+    local p = function(msg) print("|cff00ff00[SS]|r " .. msg) end
+
+    p("|cff00ccffShuffleStone|r v" .. (NS.Version or "?"))
+    p("Owned hearthstones: " .. (NS.ownedToyIDs and #NS.ownedToyIDs or 0))
+    p("Custom lists: " .. (NS.db and #NS.db.lists or 0))
+
+    -- List details
+    if NS.db then
+        for _, list in ipairs(NS.db.lists) do
+            local count = 0
+            local ownedCount = 0
+            for toyID in pairs(list.toyIDs) do
+                count = count + 1
+                local info = NS.scannedToys and NS.scannedToys[toyID]
+                if info and info.owned then ownedCount = ownedCount + 1 end
+            end
+            p("  " .. list.name .. ": " .. count .. " toys (" .. ownedCount .. " owned)")
+        end
+    end
+
+    -- Macros
+    p("Macros:")
+    for listKey, macroName in pairs(NS.macroNames) do
+        local macroID = GetMacroIndexByName(macroName)
+        local status = (macroID and macroID > 0) and "|cff00ff00OK|r" or "|cffff0000MISSING|r"
+        p("  " .. macroName .. " — " .. status)
+    end
+
+    -- Buttons
+    local btnCount = 0
+    for _ in pairs(NS.buttons) do btnCount = btnCount + 1 end
+    p("Secure buttons: " .. btnCount)
+
+    -- Rotation state
+    if NS.db and NS.db.rotationState then
+        for listKey, state in pairs(NS.db.rotationState) do
+            local remaining = state.remaining and #state.remaining or 0
+            local last = state.lastUsed or "none"
+            p("  Rotation [" .. listKey .. "]: " .. remaining .. " remaining, last=" .. tostring(last))
+        end
     end
 end
 
-function NS.Debugf(fmt, ...)
-    if NS.db and NS.db.debugMode then
-        print("|cff00ff00[SS]|r " .. string.format(fmt, ...))
-    end
-end
+-- No-op debug helpers (kept for compatibility)
+function NS.Debug() end
+function NS.Debugf() end

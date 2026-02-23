@@ -9,8 +9,9 @@ local AddonName, NS = ...
 NS.scannedToys = {}   -- { [itemID] = { id, name, icon, owned, usable, quality, isToy } }
 NS.ownedToyIDs = {}   -- ordered array of owned toy IDs
 
--- Reusable buffer for GetListsContainingToy (avoids allocation per hover)
+-- Reusable buffers (avoids allocation per call)
 local listsBuffer = {}
+local ownedToysBuffer = {}
 
 function NS.ScanToys()
     wipe(NS.scannedToys)
@@ -86,17 +87,17 @@ function NS.GetOwnedToysForList(listKey)
     local list = NS.GetListByName(listKey)
     if not list then return {} end
 
-    local result = {}
+    wipe(ownedToysBuffer)
     for _, toyData in ipairs(NS.HEARTHSTONE_TOYS) do
         local toyID = toyData.id
         if list.toyIDs[toyID] then
             local info = NS.scannedToys[toyID]
             if info and info.owned then
-                table.insert(result, toyID)
+                table.insert(ownedToysBuffer, toyID)
             end
         end
     end
-    return result
+    return ownedToysBuffer
 end
 
 -- Get all list names containing a toy. Reuses a buffer table (zero allocation).

@@ -44,6 +44,9 @@ NS.HEARTHSTONE_TOYS = {
     { id = 208704, name = "Deepdweller's Earthen Hearthstone" },
     { id = 209035, name = "Hearthstone of the Flame" },
 
+    -- Race-Specific
+    { id = 210455, name = "Draenic Hologem" },                           -- Draenei / Lightforged Draenei only
+
     -- Promotional / Store / Special
     { id = 168907, name = "Holographic Digitalization Hearthstone" },
     { id = 172179, name = "Eternal Traveler's Hearthstone" },
@@ -55,4 +58,7 @@ NS.HEARTHSTONE_TOYS = {
     { id = 236687, name = "Explosive Hearthstone" },
     { id = 245970, name = "P.O.S.T. Master's Express" },
     { id = 246565, name = "Cosmic Hearthstone" },
+    { id = 257736, name = "Lightcalled Hearthstone" },
+    { id = 263489, name = "Naaru's Enfold" },
+    { id = 265100, name = "Corewarden's Hearthstone" },
 }

@@ -1,15 +1,15 @@
 --[[
     ShuffleStone - Hearthstone Toy Randomizer
-    UI/ListEditor.lua - List editor row (macro icon, name, icon picker, delete)
+    UI/ListEditor.lua - List editor row (macro icon, name, controls, dynamic icon)
 ]]--
 
 local AddonName, NS = ...
 
 -- Create the list editor row
--- Returns a frame with: macroIcon, nameEditBox, changeIconBtn, deleteBtn
+-- Returns a frame with: macroIcon, nameEditBox, changeIconBtn, dynamicIconCB, deleteBtn
 function NS.CreateListEditor(parent)
     local editor = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    editor:SetHeight(56)
+    editor:SetHeight(80)
     editor:SetBackdrop({
         bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -21,21 +21,24 @@ function NS.CreateListEditor(parent)
     editor:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
     editor:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.8)
 
+    -- ==========================================
+    -- ROW 1: Macro icon + name input
+    -- ==========================================
+
     -- Macro icon button (SecureActionButton for drag-to-action-bar)
     local macroIcon = CreateFrame("Button", "ShuffleStoneEditorMacroBtn", editor, "SecureActionButtonTemplate")
     macroIcon:SetSize(42, 42)
-    macroIcon:SetPoint("LEFT", 6, 0)
+    macroIcon:SetPoint("TOPLEFT", 6, -6)
 
     macroIcon.icon = macroIcon:CreateTexture(nil, "ARTWORK")
     macroIcon.icon:SetAllPoints()
     macroIcon.icon:SetTexture(NS.DEFAULT_ICON)
-    macroIcon.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    macroIcon.icon:SetTexCoord(unpack(NS.ICON_TEXCOORD))
 
-    macroIcon.border = macroIcon:CreateTexture(nil, "OVERLAY")
-    macroIcon.border:SetPoint("TOPLEFT", -1, 1)
-    macroIcon.border:SetPoint("BOTTOMRIGHT", 1, -1)
-    macroIcon.border:SetColorTexture(0.6, 0.5, 0, 0.8)
-    macroIcon.border:SetDrawLayer("OVERLAY", -1)
+    macroIcon.border = macroIcon:CreateTexture(nil, "BACKGROUND")
+    macroIcon.border:SetTexture(NS.TEX_SLOT_BORDER)
+    macroIcon.border:SetSize(42 + 26, 42 + 26)
+    macroIcon.border:SetPoint("CENTER", 0, -1)
 
     -- Tooltip for macro icon
     macroIcon:SetScript("OnEnter", function(self)
@@ -69,10 +72,12 @@ function NS.CreateListEditor(parent)
 
     editor.macroIcon = macroIcon
 
-    -- List name (editable)
+    -- List name (editable) — full width, top half of editor
     local nameBox = CreateFrame("EditBox", nil, editor, "InputBoxTemplate")
-    nameBox:SetSize(160, 22)
+    nameBox:SetHeight(22)
     nameBox:SetPoint("LEFT", macroIcon, "RIGHT", 12, 0)
+    nameBox:SetPoint("TOP", editor, "TOP", 0, -8)
+    nameBox:SetPoint("RIGHT", editor, "RIGHT", -8, 0)
     nameBox:SetAutoFocus(false)
     nameBox:SetMaxLetters(30)
     nameBox:SetFontObject(GameFontHighlight)
@@ -96,6 +101,7 @@ function NS.CreateListEditor(parent)
     -- Static label (shown for "All" list instead of edit box)
     local nameLabel = editor:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     nameLabel:SetPoint("LEFT", macroIcon, "RIGHT", 16, 0)
+    nameLabel:SetPoint("TOP", editor, "TOP", 0, -10)
     nameLabel:SetText("All Hearthstones")
     nameLabel:Hide()
     editor.nameLabel = nameLabel
@@ -104,23 +110,19 @@ function NS.CreateListEditor(parent)
     local descLabel = editor:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     descLabel:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 0, -2)
     descLabel:SetText("Uses all owned hearthstones randomly")
-    descLabel:SetTextColor(0.5, 0.5, 0.5)
+    descLabel:SetTextColor(unpack(NS.COLOR_GRAY))
     descLabel:Hide()
     editor.descLabel = descLabel
 
-    -- Change icon button
-    local changeIconBtn = CreateFrame("Button", nil, editor)
-    changeIconBtn:SetSize(24, 24)
-    changeIconBtn:SetPoint("RIGHT", editor, "RIGHT", -36, 0)
-    changeIconBtn:SetNormalTexture("Interface\\GossipFrame\\BinderGossipIcon")
-    changeIconBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    -- ==========================================
+    -- ROW 2: Change Icon, Dynamic Icon
+    -- ==========================================
 
-    changeIconBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine("Change list icon", 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    changeIconBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    -- "Change Icon" button (Blizzard style)
+    local changeIconBtn = CreateFrame("Button", nil, editor, "UIPanelButtonTemplate")
+    changeIconBtn:SetSize(85, 22)
+    changeIconBtn:SetPoint("TOPLEFT", nameBox, "BOTTOMLEFT", -4, -2)
+    changeIconBtn:SetText("Change Icon")
 
     changeIconBtn:SetScript("OnClick", function()
         if editor.onChangeIcon then
@@ -130,64 +132,146 @@ function NS.CreateListEditor(parent)
 
     editor.changeIconBtn = changeIconBtn
 
-    -- Delete button
-    local deleteBtn = CreateFrame("Button", nil, editor)
-    deleteBtn:SetSize(24, 24)
-    deleteBtn:SetPoint("RIGHT", editor, "RIGHT", -8, 0)
-    deleteBtn:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
-    deleteBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    -- "Dynamic Icon" checkbox
+    local dynamicIconCB = CreateFrame("CheckButton", nil, editor, "UICheckButtonTemplate")
+    dynamicIconCB:SetSize(22, 22)
+    dynamicIconCB:SetPoint("LEFT", changeIconBtn, "RIGHT", 4, 0)
+    dynamicIconCB:SetChecked(true) -- default on
 
-    deleteBtn:SetScript("OnEnter", function(self)
+    local dynamicIconLabel = dynamicIconCB:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    dynamicIconLabel:SetPoint("LEFT", dynamicIconCB, "RIGHT", 0, 0)
+    dynamicIconLabel:SetText("Dynamic Icon")
+    dynamicIconLabel:SetTextColor(unpack(NS.COLOR_LABEL_GRAY))
+
+    -- Tooltip for dynamic icon checkbox
+    dynamicIconCB:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine("Delete this list", 1, 0.3, 0.3)
+        GameTooltip:AddLine("Dynamic Icon", 1, 1, 1)
+        GameTooltip:AddLine("When enabled, the macro icon on your", 1, 0.82, 0, true)
+        GameTooltip:AddLine("action bar changes to show the next", 1, 0.82, 0, true)
+        GameTooltip:AddLine("hearthstone in rotation.", 1, 0.82, 0, true)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("When disabled, the icon stays as the", 0.7, 0.7, 0.7, true)
+        GameTooltip:AddLine("list icon set via 'Change Icon'.", 0.7, 0.7, 0.7, true)
         GameTooltip:Show()
     end)
-    deleteBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    dynamicIconCB:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
 
-    deleteBtn:SetScript("OnClick", function()
-        if editor.onDelete then
-            editor.onDelete()
+    dynamicIconCB:SetScript("OnClick", function(self)
+        if editor.onDynamicIconToggle then
+            editor.onDynamicIconToggle(self:GetChecked())
         end
     end)
 
-    editor.deleteBtn = deleteBtn
+    editor.dynamicIconCB = dynamicIconCB
+
+    -- ==========================================
+    -- HINT (below editor, aligned with icon left edge)
+    -- ==========================================
+
+    -- Empty list warning (yellow, anchored to bottom)
+    local emptyWarning = editor:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    emptyWarning:SetPoint("BOTTOMLEFT", editor, "BOTTOMLEFT", 8, 6)
+    emptyWarning:SetJustifyH("LEFT")
+    emptyWarning:SetText("List is empty — add hearthstones below or macro won't work!")
+    emptyWarning:SetTextColor(unpack(NS.COLOR_YELLOW))
+    emptyWarning:Hide()
+    editor.emptyWarning = emptyWarning
+
+    -- Drag hint (above warning when visible, otherwise at bottom)
+    local dragHint = editor:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    dragHint:SetPoint("BOTTOMLEFT", editor, "BOTTOMLEFT", 8, 6)
+    dragHint:SetJustifyH("LEFT")
+    dragHint:SetText("Drag icon to Action Bar, or use macro 'SS: <name>' in /macro")
+    dragHint:SetTextColor(1, 1, 1)
+    editor.dragHint = dragHint
+
+    -- ==========================================
+    -- STATE MANAGEMENT
+    -- ==========================================
 
     -- Update editor state for a given list
     function editor:SetListKey(listKey)
         editor.currentListKey = listKey
 
         if listKey == "__all__" then
-            -- "All" mode: show label, hide edit box + delete
+            -- "All" mode: show label, hide edit box + list-specific controls
             nameBox:Hide()
             nameLabel:SetText("All Hearthstones")
             nameLabel:Show()
             descLabel:Show()
-            deleteBtn:Hide()
-            changeIconBtn:Hide()
+            emptyWarning:Hide()
+            dragHint:SetText("Drag icon to Action Bar, or use macro 'SS: All' in /macro")
+
+            -- Change Icon + Dynamic Icon for All
+            changeIconBtn:Show()
+            changeIconBtn:ClearAllPoints()
+            changeIconBtn:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", -4, -14)
+            dynamicIconCB:Show()
+            dynamicIconCB:ClearAllPoints()
+            dynamicIconCB:SetPoint("LEFT", changeIconBtn, "RIGHT", 4, 0)
+            dynamicIconCB:SetChecked(NS.db.dynamicIcon ~= false)
 
             -- Update macro icon
-            macroIcon.icon:SetTexture(NS.DEFAULT_ICON)
+            macroIcon.icon:SetTexture(NS.db.allIcon or NS.DEFAULT_ICON)
         else
             -- Custom list mode
             nameLabel:Hide()
             descLabel:Hide()
             nameBox:SetText(listKey)
             nameBox:Show()
-            deleteBtn:Show()
             changeIconBtn:Show()
+            dragHint:SetText("Drag icon to Action Bar, or use macro 'SS: " .. listKey .. "' in /macro")
 
-            -- Find list icon
+            -- Dynamic icon checkbox — anchor back to row 2
+            dynamicIconCB:Show()
+            dynamicIconCB:ClearAllPoints()
+            dynamicIconCB:SetPoint("LEFT", changeIconBtn, "RIGHT", 4, 0)
+
+            -- Set checked state from list
             local list = NS.GetListByName(listKey)
             if list then
                 macroIcon.icon:SetTexture(list.icon or NS.DEFAULT_ICON)
+                dynamicIconCB:SetChecked(list.dynamicIcon ~= false)
+
+                -- Show warning if list has no owned toys
+                local ownedCount = 0
+                for toyID in pairs(list.toyIDs) do
+                    local info = NS.scannedToys[toyID]
+                    if info and info.owned then
+                        ownedCount = ownedCount + 1
+                    end
+                end
+                if ownedCount == 0 then
+                    emptyWarning:Show()
+                else
+                    emptyWarning:Hide()
+                end
             end
         end
 
-        -- Update macro button attributes for drag
+        -- Reanchor hint + adjust height based on warning
+        dragHint:ClearAllPoints()
+        if emptyWarning:IsShown() then
+            dragHint:SetPoint("BOTTOMLEFT", emptyWarning, "TOPLEFT", 0, 0)
+            editor:SetHeight(92)
+        else
+            dragHint:SetPoint("BOTTOMLEFT", editor, "BOTTOMLEFT", 8, 6)
+            editor:SetHeight(80)
+        end
+
+        -- Re-create macro if it was deleted externally, then update drag attributes
         if not InCombatLockdown() then
             local macroName = NS.macroNames[listKey]
             if macroName then
                 local macroID = GetMacroIndexByName(macroName)
+                if not macroID or macroID == 0 then
+                    -- Macro was deleted externally — re-create it
+                    NS.EnsureMacro(listKey, macroName)
+                    macroID = GetMacroIndexByName(macroName)
+                end
                 if macroID and macroID > 0 then
                     macroIcon:SetAttribute("type", "macro")
                     macroIcon:SetAttribute("macro", macroID)

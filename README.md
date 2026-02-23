@@ -7,7 +7,7 @@ A World of Warcraft addon that randomizes your hearthstone toys with a shuffle-b
 - **No-Repeat Rotation** — Uses shuffle-bag algorithm to randomly select from a list of hearthstones without repeating until all are cycled
 - **Action Bar Macro** — Create custom macros for your action bar that automatically use the next random hearthstone in your list
 - **Custom Lists** — Create multiple toy lists ("Favorites", "Holiday Hearthstones", etc.) and switch between them instantly
-- **32 Hearthstones Supported** — Covers all home hearthstones (not Dalaran/Garrison variants)
+- **All Home Hearthstones Supported** — Covers every home hearthstone toy from Classic through Midnight (not Dalaran/Garrison variants)
 - **Click-to-Manage** — Visual overlay UI for adding/removing toys from lists with checkmarks and icons
 - **Floating Window** — Draggable, resizable custom UI window (Cooldown Manager style)
 - **Filtering** — Toggle "Show Unobtained" to see all supported toys or only the ones you own
@@ -27,14 +27,13 @@ A World of Warcraft addon that randomizes your hearthstone toys with a shuffle-b
 | Command | Effect |
 |---------|--------|
 | `/ss` or `/shufflestone` | Toggle the main window |
-| `/ss debug` | Toggle debug mode (verbose logging) |
-| `/ss scan` | Force rescan of your toy inventory |
+| `/ss debug` | Print debug info (owned toys, lists, macros, rotation state) |
 
 ## Main Window
 
 ### Zone 1: Toy Selection Grid
 
-Shows all available hearthstones (32 total). Click a toy icon to add it to the current list (green checkmark appears when selected). Use the "Show Unobtained" checkbox to filter out toys you don't own.
+Shows all available hearthstones. Click a toy icon to add it to the current list (green checkmark appears when selected). Use the "Show Unobtained" checkbox to filter out toys you don't own.
 
 ### Zone 2: List Editor
 
@@ -55,7 +54,7 @@ Switch between your saved lists (e.g., "All Hearthstones", "Favorites"). Changin
 ## Tech Stack
 
 - **Language:** Lua (WoW addon API)
-- **WoW Interface:** 120100 (The War Within)
+- **WoW Interface:** 120000 (Midnight)
 - **UI Framework:** Raw WoW frame API (no AceGUI)
 - **Templates Used:**
   - BasicFrameTemplateWithInset (floating window)
@@ -69,22 +68,26 @@ Switch between your saved lists (e.g., "All Hearthstones", "Favorites"). Changin
 ShuffleStone/
 ├── ShuffleStone.toc        # Addon manifest and load order
 ├── Core.lua                # Main namespace, SavedVariables, event handlers
-├── Data.lua                # Toy registry and constants
+├── Data.lua                # Toy registry (all hearthstones) and toy constants
+├── Constants.lua           # Centralized UI constants, textures, colors
 ├── ToyEngine/
 │   ├── Scanner.lua         # Toy ownership detection
-│   ├── Rotation.lua        # No-repeat shuffle algorithm
+│   ├── Rotation.lua        # No-repeat shuffle algorithm with anti-repeat
 │   └── Buttons.lua         # Macro and button management
 ├── UI/
 │   ├── IconGrid.lua        # Reusable toy icon grid
 │   ├── ListEditor.lua      # List management rows
-│   └── MainFrame.lua       # Main window and integration
+│   ├── MainFrame.lua       # Main window and integration
+│   └── Settings.lua        # Settings panel configuration
+├── Assets/
+│   └── logo.tga            # Custom addon icon
 ├── Libs/                   # Embedded libraries
 │   ├── LibStub/
 │   └── CallbackHandler-1.0/
 └── build.sh                # CurseForge build script
 ```
 
-## Supported Hearthstones (32 Total)
+## Supported Hearthstones
 
 The addon supports all home hearthstones including:
 - Hearthstone (original)
@@ -137,8 +140,8 @@ All your lists, toy selections, and rotation state are saved across WoW sessions
 ### The macro doesn't seem to do anything
 
 1. Make sure the toy list has toys in it (check the grid for checkmarks)
-2. Verify you own at least one of the toys (`/ss scan` to rescan)
-3. Try toggling the macro again after confirming a toy cast with the `/ss debug` command
+2. Verify you own at least one of the toys (`/reload` to rescan)
+3. Run `/ss debug` to check macro status and rotation state
 
 ### Can't drag the macro to my action bar
 
@@ -148,14 +151,14 @@ All your lists, toy selections, and rotation state are saved across WoW sessions
 
 ### A toy isn't in my list after reload
 
-1. Run `/ss scan` to force a rescan of your toy inventory
+1. Reload your UI (`/reload`) to force a rescan of your toy inventory
 2. Check that `ShuffleStoneDB` is present in your WoW SavedVariables
 3. Try creating a new list and manually adding the toy again
 
 ## Version
 
 **Current Version:** 1.0.0
-**Author:** asp1d
+**Author:** justLuther
 **License:** MIT
 
 ## Contributing

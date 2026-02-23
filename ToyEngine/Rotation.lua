@@ -27,15 +27,24 @@ function NS.PickNextToy(listKey)
         for _, id in ipairs(pool) do
             table.insert(state.remaining, id)
         end
-        -- Anti-repeat: avoid same toy at cycle boundary
-        if state.remaining[1] == state.lastUsed then
-            local swapIdx = math.random(2, #state.remaining)
-            state.remaining[1], state.remaining[swapIdx] = state.remaining[swapIdx], state.remaining[1]
+        -- Anti-repeat: move lastUsed to end so it's excluded from next pick
+        if state.lastUsed and #state.remaining > 1 then
+            for i, id in ipairs(state.remaining) do
+                if id == state.lastUsed then
+                    state.remaining[i] = state.remaining[#state.remaining]
+                    state.remaining[#state.remaining] = id
+                    break
+                end
+            end
         end
     end
 
-    -- Swap-and-pop for O(1) random removal
-    local idx = math.random(1, #state.remaining)
+    -- Swap-and-pop: exclude last element if it matches lastUsed (anti-repeat)
+    local pickMax = #state.remaining
+    if pickMax > 1 and state.remaining[pickMax] == state.lastUsed then
+        pickMax = pickMax - 1
+    end
+    local idx = math.random(1, pickMax)
     local toyID = state.remaining[idx]
     state.remaining[idx] = state.remaining[#state.remaining]
     state.remaining[#state.remaining] = nil
