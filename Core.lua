@@ -97,8 +97,30 @@ function NS:PLAYER_LOGIN()
     NS.Debug("v" .. NS.Version .. " loaded.")
 end
 
+-- Rescan toys when toy box data becomes available from the server
+function NS:TOYS_UPDATED()
+    if NS.ScanToys then
+        NS.ScanToys()
+    end
+    if NS.RefreshMainFrame then
+        NS.RefreshMainFrame()
+    end
+end
+
+-- Rescan when player obtains a new toy
+function NS:NEW_TOY_ADDED()
+    if NS.ScanToys then
+        NS.ScanToys()
+    end
+    if NS.RefreshMainFrame then
+        NS.RefreshMainFrame()
+    end
+end
+
 -- Register events
 eventFrame:RegisterEvent("PLAYER_LOGIN")
+eventFrame:RegisterEvent("TOYS_UPDATED")
+eventFrame:RegisterEvent("NEW_TOY_ADDED")
 
 -- Slash commands
 SLASH_SHUFFLESTONE1 = "/shufflestone"
