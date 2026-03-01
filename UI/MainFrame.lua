@@ -23,7 +23,6 @@ end
 -- Reusable buffers (avoids allocation per refresh/interaction)
 local topToysBuffer = {}
 local dropdownBuffer = {}
-local iconCycleBuffer = {}
 
 -- Get current in-list set for the selected list
 local function GetCurrentInListSet()
@@ -89,6 +88,7 @@ local function CreateDropdown(parent)
                 function()
                     selectedListKey = v.key
                     dropdown:SetText(v.key == "__all__" and "All Hearthstones" or v.key)
+                    NS.HideIconPicker()
                     NS.RefreshMainFrame()
                 end,
                 v.key
@@ -104,9 +104,26 @@ end
 function NS.CreateMainFrame()
     if mainFrame then return mainFrame end
 
-    -- Main window
-    local frame = CreateFrame("Frame", "ShuffleStoneFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+    -- Main window (via WindowFactory)
+    local frame = NS.CreateWindow({
+        name   = "ShuffleStoneFrame",
+        title  = "ShuffleStone",
+        width  = WINDOW_WIDTH,
+        minH   = 350,
+        maxH   = 650,
+        onDragStop = function(self)
+            local point, _, _, x, y = self:GetPoint()
+            NS.db.windowPos.point = point
+            NS.db.windowPos.x = x
+            NS.db.windowPos.y = y
+        end,
+        onHide = function()
+            NS.HideIconPicker()
+        end,
+    })
+
+    -- Restore saved position
+    frame:ClearAllPoints()
     frame:SetPoint(
         NS.db.windowPos.point or "CENTER",
         UIParent,
@@ -114,29 +131,6 @@ function NS.CreateMainFrame()
         NS.db.windowPos.x or 0,
         NS.db.windowPos.y or 0
     )
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        -- Save position
-        local point, _, _, x, y = self:GetPoint()
-        NS.db.windowPos.point = point
-        NS.db.windowPos.x = x
-        NS.db.windowPos.y = y
-    end)
-    frame:SetClampedToScreen(true)
-    frame:SetFrameStrata("DIALOG")
-
-    -- Add to ESC-closable frames
-    tinsert(UISpecialFrames, "ShuffleStoneFrame")
-
-    -- Title
-    frame.TitleText:SetText("ShuffleStone")
-
-    -- Hide by default
-    frame:Hide()
 
     mainFrame = frame
 
@@ -194,6 +188,7 @@ function NS.CreateMainFrame()
             end
         end
         selectedListKey = "__all__"
+        NS.HideIconPicker()
         NS.RefreshMainFrame()
         PlaySound(SOUNDKIT.IG_MAINMENU_CLOSE)
     end)
@@ -261,60 +256,7 @@ function NS.CreateMainFrame()
     end
 
     editor.onChangeIcon = function()
-        -- Build toy pool to cycle through (reuses buffer)
-        wipe(iconCycleBuffer)
-        local currentToyID
-
-        if selectedListKey == "__all__" then
-            for _, toyData in ipairs(NS.HEARTHSTONE_TOYS) do
-                table.insert(iconCycleBuffer, toyData.id)
-            end
-            currentToyID = NS.db.allIconToyID
-        else
-            local list = NS.GetListByName(selectedListKey)
-            if not list then return end
-            for _, toyData in ipairs(NS.HEARTHSTONE_TOYS) do
-                if list.toyIDs[toyData.id] then
-                    table.insert(iconCycleBuffer, toyData.id)
-                end
-            end
-            currentToyID = list.iconToyID
-        end
-
-        if #iconCycleBuffer == 0 then return end
-
-        -- Find current toy's position, advance to next
-        local nextIdx = 1
-        if currentToyID then
-            for i, toyID in ipairs(iconCycleBuffer) do
-                if toyID == currentToyID then
-                    nextIdx = (i % #iconCycleBuffer) + 1
-                    break
-                end
-            end
-        end
-
-        local nextToyID = iconCycleBuffer[nextIdx]
-        local nextInfo = NS.scannedToys[nextToyID]
-        if nextInfo then
-            if selectedListKey == "__all__" then
-                NS.db.allIcon = nextInfo.icon
-                NS.db.allIconToyID = nextToyID
-            else
-                local list = NS.GetListByName(selectedListKey)
-                if list then
-                    list.icon = nextInfo.icon
-                    list.iconToyID = nextToyID
-                end
-            end
-
-            -- Update the actual WoW macro icon when dynamic icon is off
-            if not NS.IsDynamicIcon(selectedListKey) then
-                NS.SetMacroIcon(selectedListKey, nextInfo.icon)
-            end
-
-            NS.RefreshMainFrame()
-        end
+        NS.ToggleIconPicker(selectedListKey, mainFrame)
     end
 
     editor.onDynamicIconToggle = function(checked)
@@ -331,7 +273,7 @@ function NS.CreateMainFrame()
             -- Rebuild macro body: add/remove #showtooltip
             NS.RebuildMacroBody(selectedListKey)
 
-            -- When turning off, also reset icon to static
+            -- When turning off, reset icon to static
             if not checked then
                 local icon
                 if selectedListKey == "__all__" then
@@ -394,7 +336,6 @@ function NS.CreateMainFrame()
     bottomGrid:SetPoint("RIGHT", frame, "RIGHT", -14, 0)
     frame.bottomGrid = bottomGrid
 
-    mainFrame = frame
     return frame
 end
 
@@ -574,13 +515,8 @@ function NS.CreateNewList()
 
     -- Select the new list
     selectedListKey = name
+    NS.HideIconPicker()
     NS.RefreshMainFrame()
-
-    -- Focus the name edit box so user can rename immediately
-    if mainFrame and mainFrame.editor and mainFrame.editor.nameBox then
-        mainFrame.editor.nameBox:SetFocus()
-        mainFrame.editor.nameBox:HighlightText()
-    end
 
     PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
 end

@@ -237,13 +237,7 @@ function NS.CreateListEditor(parent)
                 dynamicIconCB:SetChecked(list.dynamicIcon ~= false)
 
                 -- Show warning if list has no owned toys
-                local ownedCount = 0
-                for toyID in pairs(list.toyIDs) do
-                    local info = NS.scannedToys[toyID]
-                    if info and info.owned then
-                        ownedCount = ownedCount + 1
-                    end
-                end
+                local ownedCount = #NS.GetOwnedToysForList(listKey)
                 if ownedCount == 0 then
                     emptyWarning:Show()
                 else

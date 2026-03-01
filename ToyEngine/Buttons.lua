@@ -132,8 +132,6 @@ function NS.InitializeAllButtons()
     -- Pre-select first toy for each button
     NS.PreSelectAllButtons()
 
-    -- Register events for re-selection
-    NS.EventFrame:RegisterEvent("NEW_TOY_ADDED")
 end
 
 -- Validate rotation state: remove stale toy IDs that player no longer owns
@@ -176,15 +174,6 @@ function NS.PreSelectAllButtons()
             SetButtonToy(btn, toyID)
             NS.UpdateMacroIcon(listKey, toyID)
         end
-    end
-end
-
--- Handle new toy added
-function NS:NEW_TOY_ADDED()
-    NS.ScanToys()
-    NS.ResetAllRotations()
-    if not InCombatLockdown() then
-        NS.PreSelectAllButtons()
     end
 end
 

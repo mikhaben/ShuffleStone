@@ -11,6 +11,9 @@ NS.DEFAULT_ICON = 134414     -- hearthstone icon texture ID
 NS.BASE_HEARTHSTONE_ID = 6948
 NS.HEARTHSTONE_SPELL_ID = 8690
 
+-- Reference links for checking new hearthstone toys:
+--   Wowpedia category: https://wowpedia.fandom.com/wiki/Category:Hearthstones
+--   Wowhead toy database: https://www.wowhead.com/items/consumables/toys
 NS.HEARTHSTONE_TOYS = {
     -- Classic / Always Available
     { id = 6948,   name = "Hearthstone" },                          -- base hearthstone (item, not toy)
@@ -45,7 +48,7 @@ NS.HEARTHSTONE_TOYS = {
     { id = 209035, name = "Hearthstone of the Flame" },
 
     -- Race-Specific
-    { id = 210455, name = "Draenic Hologem" },                           -- Draenei / Lightforged Draenei only
+    { id = 210455, name = "Draenic Hologem" },
 
     -- Promotional / Store / Special
     { id = 168907, name = "Holographic Digitalization Hearthstone" },
@@ -60,5 +63,6 @@ NS.HEARTHSTONE_TOYS = {
     { id = 246565, name = "Cosmic Hearthstone" },
     { id = 257736, name = "Lightcalled Hearthstone" },
     { id = 263489, name = "Naaru's Enfold" },
+    { id = 263933, name = "Preyseeker's Hearthstone" },
     { id = 265100, name = "Corewarden's Hearthstone" },
 }

@@ -107,10 +107,14 @@ function NS:TOYS_UPDATED()
     end
 end
 
--- Rescan when player obtains a new toy
+-- Rescan when player obtains a new toy (consolidated handler — Buttons.lua no longer overrides)
 function NS:NEW_TOY_ADDED()
     if NS.ScanToys then
         NS.ScanToys()
+    end
+    NS.ResetAllRotations()
+    if not InCombatLockdown() then
+        NS.PreSelectAllButtons()
     end
     if NS.RefreshMainFrame then
         NS.RefreshMainFrame()

@@ -2,7 +2,7 @@
 ## Title: ShuffleStone
 ## Notes: Randomize hearthstone toys with custom lists
 ## Author: justLuther
-## Version: 1.0.0
+## Version: 1.0.2
 ## IconTexture: Interface\AddOns\ShuffleStone\Assets\logo
 ## SavedVariables: ShuffleStoneDB
 
@@ -21,7 +21,9 @@ ToyEngine/Rotation.lua
 ToyEngine/Buttons.lua
 
 # UI
+UI/WindowFactory.lua
 UI/IconGrid.lua
+UI/IconPicker.lua
 UI/ListEditor.lua
 UI/MainFrame.lua
 UI/Settings.lua
