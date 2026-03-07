@@ -12,6 +12,48 @@ local PICKER_ICON = NS.PICKER_ICON_SIZE
 local PICKER_GAP  = NS.PICKER_GAP
 local PICKER_PAD  = NS.PICKER_PAD
 
+-- Include base hearthstone in picker (not part of toy rotation)
+local pickerToys = { NS.BASE_HEARTHSTONE }
+for _, toyData in ipairs(NS.HEARTHSTONE_TOYS) do
+    pickerToys[#pickerToys + 1] = toyData
+end
+
+-- Stable click handler (avoids closure allocation per picker open)
+local function OnPickerButtonClick(self)
+    local picker = self:GetParent()
+    local listKey = picker.activeListKey
+    local selectedToyID = self.toyID
+    local selectedInfo = NS.scannedToys[selectedToyID]
+    local selectedIcon = selectedInfo and selectedInfo.icon or NS.DEFAULT_ICON
+
+    -- Update list icon data
+    if listKey == "__all__" then
+        NS.db.allIcon = selectedIcon
+        NS.db.allIconToyID = selectedToyID
+    else
+        local l = NS.GetListByName(listKey)
+        if l then
+            l.icon = selectedIcon
+            l.iconToyID = selectedToyID
+        end
+    end
+
+    -- Update macro icon when dynamic icon is off
+    if not NS.IsDynamicIcon(listKey) then
+        NS.SetMacroIcon(listKey, selectedIcon)
+    end
+
+    -- Update all checkmarks
+    for j = 1, #picker.buttons do
+        local b = picker.buttons[j]
+        if b and b:IsShown() then
+            b.check:SetShown(b.toyID == selectedToyID)
+        end
+    end
+
+    NS.RefreshMainFrame()
+end
+
 local function CreateIconPicker(parent)
     if iconPickerFrame then return iconPickerFrame end
 
@@ -40,6 +82,8 @@ function NS.ShowIconPicker(listKey, parentFrame)
         activeToyID = list and list.iconToyID
     end
 
+    picker.activeListKey = listKey
+
     -- Hide old buttons
     for _, btn in ipairs(picker.buttons) do
         btn:Hide()
@@ -48,7 +92,7 @@ function NS.ShowIconPicker(listKey, parentFrame)
     -- Build icon list from ALL hearthstone toys
     local visibleIdx = 0
 
-    for _, toyData in ipairs(NS.HEARTHSTONE_TOYS) do
+    for _, toyData in ipairs(pickerToys) do
         local toyID = toyData.id
         local info = NS.scannedToys[toyID]
 
@@ -77,38 +121,17 @@ function NS.ShowIconPicker(listKey, parentFrame)
             check:Hide()
             btn.check = check
 
-            btn:SetScript("OnEnter", function(self)
-                if not self.toyID then return end
-                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                local toyInfo = NS.scannedToys[self.toyID]
-                if toyInfo and toyInfo.isToy then
-                    GameTooltip:SetToyByItemID(self.toyID)
-                elseif toyInfo then
-                    GameTooltip:SetItemByID(self.toyID)
-                end
-                GameTooltip:Show()
-            end)
-            btn:SetScript("OnLeave", function()
-                GameTooltip:Hide()
-            end)
-
+            btn:SetScript("OnClick", OnPickerButtonClick)
             picker.buttons[visibleIdx] = btn
         end
 
         btn.toyID = toyID
 
-        -- Set icon texture
+        -- Set icon texture (all vibrant — picker is for choosing list icon)
         local icon = (info and info.icon) or NS.DEFAULT_ICON
         btn.tex:SetTexture(icon)
-
-        -- Owned vs unobtained visual
-        if info and info.owned then
-            btn.tex:SetDesaturated(false)
-            btn.tex:SetAlpha(1)
-        else
-            btn.tex:SetDesaturated(true)
-            btn.tex:SetAlpha(0.5)
-        end
+        btn.tex:SetDesaturated(false)
+        btn.tex:SetAlpha(1)
 
         -- Checkmark on active icon
         btn.check:SetShown(toyID == activeToyID)
@@ -120,40 +143,6 @@ function NS.ShowIconPicker(listKey, parentFrame)
         btn:SetPoint("TOPLEFT", picker, "TOPLEFT",
             PICKER_PAD + col * (PICKER_ICON + PICKER_GAP),
             -(picker.contentTop + row * (PICKER_ICON + PICKER_GAP)))
-
-        -- Click handler: select this icon
-        btn:SetScript("OnClick", function(self)
-            local selectedToyID = self.toyID
-            local selectedInfo = NS.scannedToys[selectedToyID]
-            if not selectedInfo then return end
-
-            -- Update list icon data
-            if listKey == "__all__" then
-                NS.db.allIcon = selectedInfo.icon
-                NS.db.allIconToyID = selectedToyID
-            else
-                local l = NS.GetListByName(listKey)
-                if l then
-                    l.icon = selectedInfo.icon
-                    l.iconToyID = selectedToyID
-                end
-            end
-
-            -- Update macro icon when dynamic icon is off
-            if not NS.IsDynamicIcon(listKey) then
-                NS.SetMacroIcon(listKey, selectedInfo.icon)
-            end
-
-            -- Update all checkmarks
-            for j = 1, #picker.buttons do
-                local b = picker.buttons[j]
-                if b and b:IsShown() then
-                    b.check:SetShown(b.toyID == selectedToyID)
-                end
-            end
-
-            NS.RefreshMainFrame()
-        end)
 
         btn:Show()
     end

@@ -80,11 +80,7 @@ function NS.CreateIconGrid(opts)
 
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 
-            if info.isToy then
-                GameTooltip:SetToyByItemID(self.toyID)
-            else
-                GameTooltip:SetItemByID(self.toyID)
-            end
+            GameTooltip:SetToyByItemID(self.toyID)
 
             -- Add action hint
             GameTooltip:AddLine(" ")
@@ -111,7 +107,7 @@ function NS.CreateIconGrid(opts)
             local lists = NS.GetListsContainingToy(self.toyID)
             if #lists > 0 then
                 GameTooltip:AddLine(" ")
-                GameTooltip:AddLine("In lists: " .. table.concat(lists, ", "), 0.27, 0.67, 1)
+                GameTooltip:AddLine("In lists: " .. table.concat(lists, ", "), unpack(NS.COLOR_BLUE_INFO))
             end
 
             GameTooltip:Show()

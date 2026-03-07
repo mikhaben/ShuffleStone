@@ -8,15 +8,13 @@ local AddonName, NS = ...
 
 -- Shared constants
 NS.DEFAULT_ICON = 134414     -- hearthstone icon texture ID
-NS.BASE_HEARTHSTONE_ID = 6948
-NS.HEARTHSTONE_SPELL_ID = 8690
+NS.BASE_HEARTHSTONE = { id = 6948, name = "Hearthstone" }
 
 -- Reference links for checking new hearthstone toys:
 --   Wowpedia category: https://wowpedia.fandom.com/wiki/Category:Hearthstones
 --   Wowhead toy database: https://www.wowhead.com/items/consumables/toys
 NS.HEARTHSTONE_TOYS = {
     -- Classic / Always Available
-    { id = 6948,   name = "Hearthstone" },                          -- base hearthstone (item, not toy)
     { id = 64488,  name = "The Innkeeper's Daughter" },
     { id = 54452,  name = "Ethereal Portal" },
     { id = 93672,  name = "Dark Portal" },

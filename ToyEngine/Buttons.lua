@@ -16,17 +16,30 @@ local function SafeName(listKey)
     return listKey:gsub("%s+", ""):gsub("[^%w]", "")
 end
 
+-- Clear all action attributes from a button
+local function ClearButtonAttributes(btn)
+    btn:SetAttribute("type", nil)
+    btn:SetAttribute("toy", nil)
+end
+
 -- Helper to set button attributes for a toy
 local function SetButtonToy(btn, toyID)
     if not toyID then return end
-    local info = NS.scannedToys[toyID]
-    if info and info.isToy then
-        btn:SetAttribute("type", "toy")
-        btn:SetAttribute("toy", toyID)
+    btn:SetAttribute("type", "toy")
+    btn:SetAttribute("toy", toyID)
+end
+
+-- Pick next toy for a button and apply it, or clear if none available
+local function PickAndApply(listKey, btn)
+    local toyID = NS.PickNextToy(listKey)
+    if toyID then
+        SetButtonToy(btn, toyID)
+        NS.UpdateMacroIcon(listKey, toyID)
     else
-        -- Base Hearthstone is an item, not a toy
-        btn:SetAttribute("type", "item")
-        btn:SetAttribute("item", "item:" .. toyID)
+        ClearButtonAttributes(btn)
+        -- Reset macro to static icon when no toys available
+        NS.RebuildMacroBody(listKey)
+        NS.SetMacroIcon(listKey, NS.GetListIcon(listKey))
     end
 end
 
@@ -51,11 +64,7 @@ local function CreateSecureButton(listKey)
     -- PostClick: after each use, queue the next random toy for the next press
     btn:SetScript("PostClick", function(self)
         if not InCombatLockdown() then
-            local toyID = NS.PickNextToy(self.listKey)
-            if toyID then
-                SetButtonToy(self, toyID)
-                NS.UpdateMacroIcon(self.listKey, toyID)
-            end
+            PickAndApply(self.listKey, self)
         end
     end)
 
@@ -66,15 +75,14 @@ end
 -- Build macro body for a list key
 local function BuildMacroBody(listKey, toyID)
     local btnName = "ShuffleStone_" .. SafeName(listKey)
-    local showtooltip = "#showtooltip item:" .. (toyID or NS.BASE_HEARTHSTONE_ID)
+    local showtooltip = toyID and ("#showtooltip item:" .. toyID) or "#showtooltip"
     return showtooltip .. "\n/stopcasting\n/click " .. btnName
 end
 
 -- Create or update macro for a list
-function NS.EnsureMacro(listKey, macroDisplayName)
+function NS.EnsureMacro(listKey, macroName)
     if InCombatLockdown() then return end
 
-    local macroName = macroDisplayName
     NS.macroNames[listKey] = macroName
 
     local body = BuildMacroBody(listKey)
@@ -86,7 +94,7 @@ function NS.EnsureMacro(listKey, macroDisplayName)
         local icon = NS.DEFAULT_ICON
         local id = CreateMacro(macroName, icon, body, false)
         if not id then
-            NS.Debug("Could not create macro '" .. macroName .. "'. Macro limit may be reached (120).")
+            print("|cffff8800ShuffleStone|r: Could not create macro '" .. macroName .. "'. Macro limit may be reached (120).")
         end
     end
 end
@@ -147,8 +155,39 @@ function NS.InitializeAllButtons()
 
 end
 
--- Validate rotation state: remove stale toy IDs that player no longer owns
+-- Validate rotation state: remove orphaned entries and stale toy IDs
 function NS.ValidateAllRotations()
+    -- Clean stale toy IDs from custom lists (toys removed from registry)
+    for _, list in ipairs(NS.db.lists) do
+        local stale
+        for toyID in pairs(list.toyIDs) do
+            if not NS.scannedToys[toyID] then
+                stale = stale or {}
+                stale[#stale + 1] = toyID
+            end
+        end
+        if stale then
+            for _, id in ipairs(stale) do
+                list.toyIDs[id] = nil
+            end
+        end
+    end
+
+    -- Collect orphaned rotation keys first (can't delete during pairs iteration)
+    local orphans
+    for listKey in pairs(NS.db.rotationState) do
+        if listKey ~= "__all__" and not NS.GetListByName(listKey) then
+            orphans = orphans or {}
+            orphans[#orphans + 1] = listKey
+        end
+    end
+    if orphans then
+        for _, key in ipairs(orphans) do
+            NS.db.rotationState[key] = nil
+        end
+    end
+
+    -- Validate remaining entries against current owned toys
     for listKey, state in pairs(NS.db.rotationState) do
         if state.remaining and #state.remaining > 0 then
             local pool = NS.GetOwnedToysForList(listKey)
@@ -170,22 +209,22 @@ function NS.ValidateAllRotations()
             end
         end
 
-        -- Validate lastUsed
-        if state.lastUsed and NS.scannedToys[state.lastUsed] and not NS.scannedToys[state.lastUsed].owned then
+        -- Validate lastUsed (clear if toy removed from registry or no longer owned)
+        if state.lastUsed and (not NS.scannedToys[state.lastUsed] or not NS.scannedToys[state.lastUsed].owned) then
             state.lastUsed = nil
         end
     end
 end
 
--- Pre-select a toy for each button (sets attribute for next click)
+-- Pre-select a toy for each button that doesn't already have a valid one.
 function NS.PreSelectAllButtons()
     if InCombatLockdown() then return end
 
     for listKey, btn in pairs(NS.buttons) do
-        local toyID = NS.PickNextToy(listKey)
-        if toyID then
-            SetButtonToy(btn, toyID)
-            NS.UpdateMacroIcon(listKey, toyID)
+        local currentToy = btn:GetAttribute("toy")
+        local hasValid = currentToy and NS.scannedToys[currentToy] and NS.scannedToys[currentToy].owned
+        if not hasValid then
+            PickAndApply(listKey, btn)
         end
     end
 end
@@ -195,12 +234,8 @@ function NS.CreateListButton(listName)
     CreateSecureButton(listName)
     NS.EnsureMacro(listName, NS.MacroNameForList(listName))
 
-    if not InCombatLockdown() then
-        local toyID = NS.PickNextToy(listName)
-        if toyID and NS.buttons[listName] then
-            SetButtonToy(NS.buttons[listName], toyID)
-            NS.UpdateMacroIcon(listName, toyID)
-        end
+    if not InCombatLockdown() and NS.buttons[listName] then
+        PickAndApply(listName, NS.buttons[listName])
     end
 end
 
@@ -209,14 +244,14 @@ function NS.RemoveListButton(listName)
     local btn = NS.buttons[listName]
     if btn then
         if not InCombatLockdown() then
-            btn:SetAttribute("type", nil)
+            ClearButtonAttributes(btn)
         end
         btn:Hide()
         NS.buttons[listName] = nil
     end
 
     if not InCombatLockdown() then
-        local macroName = NS.MacroNameForList(listName)
+        local macroName = NS.macroNames[listName] or NS.MacroNameForList(listName)
         local existingID = GetMacroIndexByName(macroName)
         if existingID and existingID > 0 then
             DeleteMacro(existingID)
@@ -224,9 +259,7 @@ function NS.RemoveListButton(listName)
     end
 
     NS.macroNames[listName] = nil
-    if NS.db.rotationState[listName] then
-        NS.db.rotationState[listName] = nil
-    end
+    NS.db.rotationState[listName] = nil
 end
 
 -- Rename a list's button and macro (preserves action bar slot)
@@ -248,10 +281,15 @@ function NS.RenameListButton(oldName, newName)
         end
     end
 
+    -- Ensure macro exists for new name (handles case where old macro was deleted externally)
+    if not NS.macroNames[newName] then
+        NS.EnsureMacro(newName, NS.MacroNameForList(newName))
+    end
+
     -- Clean up old button (do NOT delete macro)
     local oldBtn = NS.buttons[oldName]
     if oldBtn then
-        oldBtn:SetAttribute("type", nil)
+        ClearButtonAttributes(oldBtn)
         oldBtn:Hide()
         NS.buttons[oldName] = nil
     end
@@ -264,10 +302,8 @@ function NS.RenameListButton(oldName, newName)
     end
 
     -- Pre-select toy for new button
-    local toyID = NS.PickNextToy(newName)
-    if toyID and NS.buttons[newName] then
-        SetButtonToy(NS.buttons[newName], toyID)
-        NS.UpdateMacroIcon(newName, toyID)
+    if NS.buttons[newName] then
+        PickAndApply(newName, NS.buttons[newName])
     end
 
     return true
@@ -277,15 +313,6 @@ end
 function NS.RefreshListButton(listKey)
     NS.ResetRotation(listKey)
     if not InCombatLockdown() and NS.buttons[listKey] then
-        local toyID = NS.PickNextToy(listKey)
-        if toyID then
-            SetButtonToy(NS.buttons[listKey], toyID)
-            NS.UpdateMacroIcon(listKey, toyID)
-        else
-            -- List is empty — clear button so macro does nothing
-            NS.buttons[listKey]:SetAttribute("type", nil)
-            NS.buttons[listKey]:SetAttribute("toy", nil)
-            NS.buttons[listKey]:SetAttribute("item", nil)
-        end
+        PickAndApply(listKey, NS.buttons[listKey])
     end
 end

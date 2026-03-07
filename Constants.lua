@@ -8,6 +8,7 @@ local AddonName, NS = ...
 -- Macro naming
 NS.MACRO_PREFIX = "SS: "
 NS.MACRO_ALL_NAME = "SS: All"
+NS.ALL_DISPLAY_NAME = "All Hearthstones"
 
 function NS.MacroNameForList(listName)
     return NS.MACRO_PREFIX .. listName
@@ -15,7 +16,6 @@ end
 
 -- Layout
 NS.WINDOW_WIDTH = 420
-NS.WINDOW_HEIGHT = 480
 NS.SECTION_GAP = 16
 NS.ICON_SIZE = 40
 NS.ICON_GAP = 6
@@ -61,6 +61,16 @@ function NS.IsDynamicIcon(listKey)
     else
         local list = NS.GetListByName(listKey)
         return not list or list.dynamicIcon ~= false
+    end
+end
+
+-- Get the static icon for a list key (fallback to default hearthstone icon)
+function NS.GetListIcon(listKey)
+    if listKey == "__all__" then
+        return NS.db.allIcon or NS.DEFAULT_ICON
+    else
+        local list = NS.GetListByName(listKey)
+        return list and list.icon or NS.DEFAULT_ICON
     end
 end
 

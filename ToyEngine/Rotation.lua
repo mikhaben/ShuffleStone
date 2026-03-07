@@ -29,12 +29,17 @@ function NS.PickNextToy(listKey)
         end
         -- Anti-repeat: move lastUsed to end so it's excluded from next pick
         if state.lastUsed and #state.remaining > 1 then
+            local found = false
             for i, id in ipairs(state.remaining) do
                 if id == state.lastUsed then
                     state.remaining[i] = state.remaining[#state.remaining]
                     state.remaining[#state.remaining] = id
+                    found = true
                     break
                 end
+            end
+            if not found then
+                state.lastUsed = nil
             end
         end
     end

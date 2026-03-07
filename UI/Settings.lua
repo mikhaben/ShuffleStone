@@ -44,5 +44,4 @@ function NS.InitializeSettings()
     category.ID = "ShuffleStone"
     Settings.RegisterAddOnCategory(category)
 
-    NS.settingsCategory = category
 end

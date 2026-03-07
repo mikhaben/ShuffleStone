@@ -6,19 +6,10 @@
 local AddonName, NS = ...
 
 local WINDOW_WIDTH = NS.WINDOW_WIDTH
-local WINDOW_HEIGHT = NS.WINDOW_HEIGHT
 local SECTION_GAP = NS.SECTION_GAP
 
 local selectedListKey = "__all__"
 local mainFrame = nil
-
-function NS.GetSelectedListKey()
-    return selectedListKey
-end
-
-function NS.SetSelectedListKey(key)
-    selectedListKey = key
-end
 
 -- Reusable buffers (avoids allocation per refresh/interaction)
 local topToysBuffer = {}
@@ -55,7 +46,7 @@ local function GetListDropdownValues()
     idx = idx + 1
     if not dropdownBuffer[idx] then dropdownBuffer[idx] = {} end
     dropdownBuffer[idx].key = "__all__"
-    dropdownBuffer[idx].text = "All Hearthstones"
+    dropdownBuffer[idx].text = NS.ALL_DISPLAY_NAME
 
     for _, list in ipairs(NS.db.lists) do
         idx = idx + 1
@@ -78,7 +69,7 @@ local function CreateDropdown(parent)
     local dropdown = CreateFrame("DropdownButton", "ShuffleStoneListDropdown", parent, "WowStyle1DropdownTemplate")
     dropdown:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -32)
     dropdown:SetWidth(200)
-    dropdown:SetDefaultText("All Hearthstones")
+    dropdown:SetDefaultText(NS.ALL_DISPLAY_NAME)
 
     local function SetupMenu(dd, rootDescription)
         local values = GetListDropdownValues()
@@ -87,7 +78,7 @@ local function CreateDropdown(parent)
                 function() return v.key == selectedListKey end,
                 function()
                     selectedListKey = v.key
-                    dropdown:SetText(v.key == "__all__" and "All Hearthstones" or v.key)
+                    dropdown:SetText(v.key == "__all__" and NS.ALL_DISPLAY_NAME or v.key)
                     NS.HideIconPicker()
                     NS.RefreshMainFrame()
                 end,
@@ -97,7 +88,7 @@ local function CreateDropdown(parent)
     end
 
     dropdown:SetupMenu(SetupMenu)
-    dropdown:SetText("All Hearthstones")
+    dropdown:SetText(NS.ALL_DISPLAY_NAME)
     return dropdown
 end
 
@@ -119,6 +110,7 @@ function NS.CreateMainFrame()
         end,
         onHide = function()
             NS.HideIconPicker()
+            GameTooltip:Hide()
         end,
     })
 
@@ -228,6 +220,12 @@ function NS.CreateMainFrame()
         if selectedListKey == "__all__" then return end
         if newName == selectedListKey then return end -- no change
 
+        -- Block reserved internal key
+        if newName == "__all__" then
+            editor.nameBox:SetText(selectedListKey)
+            return
+        end
+
         -- Check duplicate
         if NS.GetListByName(newName) then
             print("|cffff8800ShuffleStone|r: List '" .. newName .. "' already exists.")
@@ -260,29 +258,28 @@ function NS.CreateMainFrame()
     end
 
     editor.onDynamicIconToggle = function(checked)
+        local list = selectedListKey ~= "__all__" and NS.GetListByName(selectedListKey) or nil
+
         if selectedListKey == "__all__" then
             NS.db.dynamicIcon = checked
-        else
-            local list = NS.GetListByName(selectedListKey)
-            if list then
-                list.dynamicIcon = checked
-            end
+        elseif list then
+            list.dynamicIcon = checked
         end
 
         if not InCombatLockdown() then
-            -- Rebuild macro body: add/remove #showtooltip
-            NS.RebuildMacroBody(selectedListKey)
-
-            -- When turning off, reset icon to static
-            if not checked then
-                local icon
-                if selectedListKey == "__all__" then
-                    icon = NS.db.allIcon or NS.DEFAULT_ICON
-                else
-                    local list = NS.GetListByName(selectedListKey)
-                    icon = list and list.icon or NS.DEFAULT_ICON
+            if checked then
+                -- Turning ON: update icon to current toy on the button
+                local btn = NS.buttons[selectedListKey]
+                if btn then
+                    local currentToy = btn:GetAttribute("toy")
+                    if currentToy then
+                        NS.UpdateMacroIcon(selectedListKey, currentToy)
+                    end
                 end
-                NS.SetMacroIcon(selectedListKey, icon)
+            else
+                -- Turning OFF: rebuild body and reset to static icon
+                NS.RebuildMacroBody(selectedListKey)
+                NS.SetMacroIcon(selectedListKey, NS.GetListIcon(selectedListKey))
             end
         end
     end
@@ -356,7 +353,7 @@ function NS.RefreshMainFrame()
 
     -- Update dropdown text
     if isAllList then
-        mainFrame.dropdown:SetText("All Hearthstones")
+        mainFrame.dropdown:SetText(NS.ALL_DISPLAY_NAME)
     else
         mainFrame.dropdown:SetText(selectedListKey)
     end
@@ -453,8 +450,9 @@ function NS.RefreshMainFrame()
     -- Dynamic window height: fit content without excess empty space
     local editorBottom = mainFrame.editor:GetBottom()
     local gridHeight = mainFrame.bottomGrid:GetHeight()
-    if editorBottom and gridHeight then
-        local headerHeight = mainFrame:GetTop() - editorBottom
+    local frameTop = mainFrame:GetTop()
+    if editorBottom and gridHeight and frameTop then
+        local headerHeight = frameTop - editorBottom
         local totalNeeded = headerHeight + gridHeight + 60
         if not isAllList then
             totalNeeded = totalNeeded + mainFrame.topGrid:GetHeight() + 40

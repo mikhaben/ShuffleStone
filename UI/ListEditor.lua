@@ -44,7 +44,7 @@ function NS.CreateListEditor(parent)
     macroIcon:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         local listKey = editor.currentListKey or "__all__"
-        local displayName = (listKey == "__all__") and "All Hearthstones" or listKey
+        local displayName = (listKey == "__all__") and NS.ALL_DISPLAY_NAME or listKey
         GameTooltip:AddLine("ShuffleStone: " .. displayName, 1, 1, 1)
         local count = #NS.GetOwnedToysForList(listKey)
         GameTooltip:AddLine(count .. " hearthstones in rotation", 0.7, 0.7, 0.7)
@@ -102,7 +102,7 @@ function NS.CreateListEditor(parent)
     local nameLabel = editor:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     nameLabel:SetPoint("LEFT", macroIcon, "RIGHT", 16, 0)
     nameLabel:SetPoint("TOP", editor, "TOP", 0, -10)
-    nameLabel:SetText("All Hearthstones")
+    nameLabel:SetText(NS.ALL_DISPLAY_NAME)
     nameLabel:Hide()
     editor.nameLabel = nameLabel
 
@@ -199,7 +199,6 @@ function NS.CreateListEditor(parent)
         if listKey == "__all__" then
             -- "All" mode: show label, hide edit box + list-specific controls
             nameBox:Hide()
-            nameLabel:SetText("All Hearthstones")
             nameLabel:Show()
             descLabel:Show()
             emptyWarning:Hide()
@@ -215,7 +214,7 @@ function NS.CreateListEditor(parent)
             dynamicIconCB:SetChecked(NS.db.dynamicIcon ~= false)
 
             -- Update macro icon
-            macroIcon.icon:SetTexture(NS.db.allIcon or NS.DEFAULT_ICON)
+            macroIcon.icon:SetTexture(NS.GetListIcon(listKey))
         else
             -- Custom list mode
             nameLabel:Hide()
@@ -233,7 +232,7 @@ function NS.CreateListEditor(parent)
             -- Set checked state from list
             local list = NS.GetListByName(listKey)
             if list then
-                macroIcon.icon:SetTexture(list.icon or NS.DEFAULT_ICON)
+                macroIcon.icon:SetTexture(NS.GetListIcon(listKey))
                 dynamicIconCB:SetChecked(list.dynamicIcon ~= false)
 
                 -- Show warning if list has no owned toys

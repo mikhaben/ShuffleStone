@@ -19,16 +19,18 @@ NS.defaults = {
     showUnobtained = false,
     dynamicIcon = true,
     onboardingDismissed = false,
+    allIcon = nil,
+    allIconToyID = nil,
 }
 
--- Deep copy
-function NS.DeepCopy(orig)
+-- Deep copy (local, only used within Core)
+local function DeepCopy(orig)
     if type(orig) ~= "table" then
         return orig
     end
     local copy = {}
     for k, v in next, orig, nil do
-        copy[NS.DeepCopy(k)] = NS.DeepCopy(v)
+        copy[DeepCopy(k)] = DeepCopy(v)
     end
     return copy
 end
@@ -38,7 +40,7 @@ local function MergeDefaults(saved, defaults)
     for k, v in pairs(defaults) do
         if saved[k] == nil then
             if type(v) == "table" then
-                saved[k] = NS.DeepCopy(v)
+                saved[k] = DeepCopy(v)
             else
                 saved[k] = v
             end
@@ -52,7 +54,7 @@ end
 -- Initialize database
 local function InitializeDatabase()
     if not ShuffleStoneDB then
-        ShuffleStoneDB = NS.DeepCopy(NS.defaults)
+        ShuffleStoneDB = DeepCopy(NS.defaults)
     else
         ShuffleStoneDB = MergeDefaults(ShuffleStoneDB, NS.defaults)
     end
@@ -61,7 +63,6 @@ end
 
 -- Event frame
 local eventFrame = CreateFrame("Frame")
-NS.EventFrame = eventFrame
 
 eventFrame:SetScript("OnEvent", function(self, event, ...)
     if NS[event] then
@@ -86,7 +87,6 @@ function NS:PLAYER_LOGIN()
     -- Initialize UI (pre-create main frame hidden)
     if NS.CreateMainFrame then
         NS.CreateMainFrame()
-        NS.Debug("UI initialized")
     end
 
     -- Register settings panel
@@ -94,31 +94,37 @@ function NS:PLAYER_LOGIN()
         NS.InitializeSettings()
     end
 
-    NS.Debug("v" .. NS.Version .. " loaded.")
+end
+
+-- Shared helper: rescan toys, update rotations, refresh UI
+local function RescanAndRefresh(resetRotations)
+    if not NS.db then return end
+    if NS.ScanToys then NS.ScanToys() end
+    if resetRotations then
+        NS.ResetAllRotations()
+    else
+        NS.ValidateAllRotations()
+    end
+    NS.PreSelectAllButtons()
+    if NS.RefreshMainFrame then NS.RefreshMainFrame() end
 end
 
 -- Rescan toys when toy box data becomes available from the server
+-- Debounced: TOYS_UPDATED fires in bursts, coalesce into one end-of-frame rescan
+local pendingRescan = false
 function NS:TOYS_UPDATED()
-    if NS.ScanToys then
-        NS.ScanToys()
-    end
-    if NS.RefreshMainFrame then
-        NS.RefreshMainFrame()
-    end
+    if pendingRescan then return end
+    pendingRescan = true
+    C_Timer.After(0, function()
+        pendingRescan = false
+        RescanAndRefresh(false)
+    end)
 end
 
--- Rescan when player obtains a new toy (consolidated handler — Buttons.lua no longer overrides)
+-- Rescan when player obtains a new toy
 function NS:NEW_TOY_ADDED()
-    if NS.ScanToys then
-        NS.ScanToys()
-    end
-    NS.ResetAllRotations()
-    if not InCombatLockdown() then
-        NS.PreSelectAllButtons()
-    end
-    if NS.RefreshMainFrame then
-        NS.RefreshMainFrame()
-    end
+    pendingRescan = true -- suppress redundant TOYS_UPDATED that follows
+    RescanAndRefresh(true)
 end
 
 -- Register events
@@ -189,6 +195,3 @@ function NS.PrintDebugInfo()
     end
 end
 
--- No-op debug helpers (kept for compatibility)
-function NS.Debug() end
-function NS.Debugf() end
