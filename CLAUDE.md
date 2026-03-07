@@ -95,7 +95,7 @@ ShuffleStoneDB = {
 ## Title: ShuffleStone
 ## Notes: Randomize hearthstone toys with custom lists
 ## Author: justLuther
-## Version: 1.0.2
+## Version: 1.0.3
 ## IconTexture: Interface\AddOns\ShuffleStone\Assets\logo
 ## SavedVariables: ShuffleStoneDB
 
@@ -639,7 +639,7 @@ These libraries are embedded in the Libs folder and loaded first in the TOC.
 
 ## Version
 
-- **Current Version:** 1.0.2
+- **Current Version:** 1.0.3
 - **WoW Interface:** 120000 (Midnight)
 - **Author:** justLuther
 - **Custom Icon:** Assets/logo.tga

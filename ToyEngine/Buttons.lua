@@ -22,7 +22,7 @@ local function SetButtonToy(btn, toyID)
     local info = NS.scannedToys[toyID]
     if info and info.isToy then
         btn:SetAttribute("type", "toy")
-        btn:SetAttribute("toy", info.name)
+        btn:SetAttribute("toy", toyID)
     else
         -- Base Hearthstone is an item, not a toy
         btn:SetAttribute("type", "item")
@@ -64,13 +64,10 @@ local function CreateSecureButton(listKey)
 end
 
 -- Build macro body for a list key
-local function BuildMacroBody(listKey)
+local function BuildMacroBody(listKey, toyID)
     local btnName = "ShuffleStone_" .. SafeName(listKey)
-    if NS.IsDynamicIcon(listKey) then
-        return "#showtooltip\n/stopcasting\n/click " .. btnName
-    else
-        return "/stopcasting\n/click " .. btnName
-    end
+    local showtooltip = "#showtooltip item:" .. (toyID or NS.BASE_HEARTHSTONE_ID)
+    return showtooltip .. "\n/stopcasting\n/click " .. btnName
 end
 
 -- Create or update macro for a list
@@ -107,11 +104,27 @@ function NS.RebuildMacroBody(listKey)
     end
 end
 
--- Update macro icon to match currently selected toy
+-- Update macro icon and tooltip to match currently selected toy
+-- Deferred to next frame via C_Timer to avoid editing the macro body while it's executing
 function NS.UpdateMacroIcon(listKey, toyID)
-    if not NS.IsDynamicIcon(listKey) then return end
+    if InCombatLockdown() then return end
     local toyInfo = NS.scannedToys[toyID]
-    NS.SetMacroIcon(listKey, toyInfo and toyInfo.icon or NS.DEFAULT_ICON)
+    local icon = toyInfo and toyInfo.icon or NS.DEFAULT_ICON
+
+    C_Timer.After(0, function()
+        if InCombatLockdown() then return end
+        local macroName = NS.macroNames[listKey]
+        if not macroName then return end
+        local macroID = GetMacroIndexByName(macroName)
+        if not macroID or macroID == 0 then return end
+
+        local body = BuildMacroBody(listKey, toyID)
+        if NS.IsDynamicIcon(listKey) then
+            EditMacro(macroID, macroName, icon, body)
+        else
+            EditMacro(macroID, macroName, nil, body)
+        end
+    end)
 end
 
 -- Initialize buttons for "__all__" and each custom list
