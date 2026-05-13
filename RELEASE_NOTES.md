@@ -1,5 +1,13 @@
 # ShuffleStone Release Notes
 
+## Version 1.0.6 - New Hearthstone
+
+### Updated Toy Registry
+
+- **Added Personal Key to the Arcantina** — Midnight quest reward (Arator's Journey) that teleports you to the Silvermoon Arcantina on a 15-minute cooldown, effectively a Silvermoon hearthstone.
+
+---
+
 ## Version 1.0.5 - Stability & Performance
 
 ### Bug Fixes

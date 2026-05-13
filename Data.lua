@@ -59,6 +59,7 @@ NS.HEARTHSTONE_TOYS = {
     { id = 236687, name = "Explosive Hearthstone" },
     { id = 245970, name = "P.O.S.T. Master's Express" },
     { id = 246565, name = "Cosmic Hearthstone" },
+    { id = 253629, name = "Personal Key to the Arcantina" },
     { id = 257736, name = "Lightcalled Hearthstone" },
     { id = 263489, name = "Naaru's Enfold" },
     { id = 263933, name = "Preyseeker's Hearthstone" },
