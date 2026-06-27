@@ -54,7 +54,7 @@ Switch between your saved lists (e.g., "All Hearthstones", "Favorites"). Changin
 ## Tech Stack
 
 - **Language:** Lua (WoW addon API)
-- **WoW Interface:** 120000 (Midnight)
+- **WoW Interface:** 120007 (Midnight)
 - **UI Framework:** Raw WoW frame API (no AceGUI)
 - **Templates Used:**
   - BasicFrameTemplateWithInset (floating window)

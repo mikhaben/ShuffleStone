@@ -1,4 +1,4 @@
-## Interface: 120000
+## Interface: 120007
 ## Title: ShuffleStone
 ## Notes: Randomize hearthstone toys with custom lists
 ## Author: justLuther
