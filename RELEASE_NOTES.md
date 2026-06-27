@@ -1,5 +1,13 @@
 # ShuffleStone Release Notes
 
+## Version 1.0.7 - WoW 12.0.7 Compatibility
+
+### Compatibility
+
+- **Updated for WoW 12.0.7 (Midnight)** — Bumped the supported interface version to 120007 so the addon loads on the current patch. No functional changes: the toy, secure-button, and shuffle-rotation APIs are unaffected by the 12.0.1–12.0.7 changes.
+
+---
+
 ## Version 1.0.6 - New Hearthstone
 
 ### Updated Toy Registry

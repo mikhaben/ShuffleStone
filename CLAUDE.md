@@ -18,7 +18,7 @@ Key pattern: Pre-selected toys queued into SecureActionButton attributes (not Pr
 
 ```
 ShuffleStone/
-├── ShuffleStone.toc           # Addon manifest (interface 120007, version 1.0.6)
+├── ShuffleStone.toc           # Addon manifest (interface 120007, version 1.0.7)
 ├── Core.lua                   # Namespace, SavedVariables init, event handling, slash commands
 ├── Data.lua                   # Hearthstone toy registry (id, name pairs; 40+ toys)
 ├── Constants.lua              # UI constants (sizes, textures, colors), helpers
