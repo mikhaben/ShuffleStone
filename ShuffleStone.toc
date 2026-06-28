@@ -5,6 +5,8 @@
 ## Version: 1.0.7
 ## IconTexture: Interface\AddOns\ShuffleStone\Assets\logo
 ## SavedVariables: ShuffleStoneDB
+## X-Curse-Project-ID: 1469940
+## X-Wago-ID: qGZO3kNd
 
 # Libraries
 Libs/LibStub/LibStub.lua

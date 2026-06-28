@@ -1,0 +1,80 @@
+name: Package and Release
+
+# Builds the addon and uploads it to CurseForge, Wago, and GitHub Releases
+# when you push a version tag (e.g. v1.0.8).
+#
+# Tag-driven on purpose: the BigWigsMods packager refuses to package a tag it
+# reaches via a branch push ("Found future tag, not packaging"), so releases
+# must be triggered by the tag itself — not by pushing a branch.
+#
+# Release flow:
+#   1. Bump ## Version in ShuffleStone.toc and add release-notes/<version>.md
+#      (this file becomes the CurseForge/Wago changelog).
+#   2. Commit, then tag and push the tag:
+#        git tag v1.0.8
+#        git push origin v1.0.8
+#
+# ── One-time setup ───────────────────────────────────────────────────────────
+#  Deploy runs ONLY when BOTH API keys are present; otherwise the job skips the
+#  upload and logs a warning instead of publishing to just one platform.
+#
+#  Repo secrets (Settings → Secrets and variables → Actions → New secret):
+#       CF_API_KEY      CurseForge token  (legacy.curseforge.com → My API Tokens)
+#       WAGO_API_KEY    Wago token        (addons.wago.io → account → API tokens)
+#     GITHUB_TOKEN is provided automatically — do not create it.
+#  Project IDs live in ShuffleStone.toc (## X-Curse-Project-ID / ## X-Wago-ID).
+#
+# ── Security ─────────────────────────────────────────────────────────────────
+#  `@v2` tracks the latest v2 release. To pin against a supply-chain compromise,
+#  replace it with a full commit SHA: BigWigsMods/packager@<40-char-sha>.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # required to create the GitHub Release
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deploy credentials
+        id: creds
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          WAGO_API_KEY: ${{ secrets.WAGO_API_KEY }}
+        run: |
+          if [ -n "$CF_API_KEY" ] && [ -n "$WAGO_API_KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Deploy skipped — both CF_API_KEY and WAGO_API_KEY secrets must be set to publish."
+          fi
+
+      - name: Checkout
+        if: steps.creds.outputs.ready == 'true'
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history + tags for version detection
+
+      - name: Assemble per-version changelog
+        if: steps.creds.outputs.ready == 'true'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [ -f "release-notes/${version}.md" ]; then
+            cp "release-notes/${version}.md" CHANGELOG.md
+            echo "Using release-notes/${version}.md as the changelog."
+          else
+            echo "::warning::release-notes/${version}.md not found — falling back to a minimal changelog."
+            printf '# %s\n\nSee the project page for details.\n' "$version" > CHANGELOG.md
+          fi
+
+      - name: Package and release
+        if: steps.creds.outputs.ready == 'true'
+        uses: BigWigsMods/packager@v2
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_KEY }}   # env var must stay WAGO_API_TOKEN (packager requirement); secret is WAGO_API_KEY for consistency
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}

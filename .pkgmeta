@@ -1,0 +1,30 @@
+# BigWigsMods/packager configuration — https://github.com/BigWigsMods/packager
+# ShuffleStone is a single addon at the repo root with embedded libraries
+# (LibStub, CallbackHandler) that ship in the package — no externals to fetch.
+
+package-as: ShuffleStone
+
+# Libs are embedded → no "nolib" variant needed.
+enable-nolib-creation: no
+
+# Per-version changelog shown on CurseForge/Wago. The workflow copies
+# release-notes/<version>.md to CHANGELOG.md before packaging.
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+# Kept OUT of the uploaded zip (the addon, its Libs, and README stay in).
+# `.git` is removed automatically.
+ignore:
+  - .github
+  - .pkgmeta
+  - .gitignore
+  - .claude
+  - CLAUDE.md
+  - MARKETING.md
+  - build
+  - build.sh
+  - deploy.sh
+  - release-notes
+  - CHANGELOG.md
+  - .DS_Store

@@ -38,9 +38,21 @@ ShuffleStone/
 ├── Libs/
 │   ├── LibStub/LibStub.lua    # Library loader
 │   └── CallbackHandler-1.0/   # Event system for inter-component communication
+├── release-notes/             # Per-version changelog (release-notes/<version>.md → CurseForge/Wago)
+├── .pkgmeta                   # BigWigsMods packager config (manual-changelog, ignore list)
+├── .github/workflows/
+│   └── release.yml            # CI: on tag push, package + upload to CurseForge/Wago/GitHub
 ├── build.sh                   # CurseForge build script
 └── deploy.sh                  # Deployment helper
 ```
+
+## Releasing
+
+CI (`.github/workflows/release.yml`) runs the [BigWigsMods packager](https://github.com/BigWigsMods/packager) on pushed version tags (`v*`) and uploads to CurseForge, Wago, and GitHub Releases. Tag-driven because the packager refuses to package a tag reached via a branch push. `.pkgmeta` controls zip contents — embedded Libs ship; dev/tooling files are stripped via `ignore`.
+
+Per-version changelog: the CurseForge/Wago description comes from `release-notes/<version>.md`, copied to `CHANGELOG.md` (gitignored) by the workflow and fed to the packager via `manual-changelog`.
+
+Release: bump `## Version`, add `release-notes/<version>.md`, commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`. Requires repo secrets `CF_API_KEY` + `WAGO_API_KEY` (both, or deploy is skipped); project IDs live in the TOC (`X-Curse-Project-ID`, `X-Wago-ID`).
 
 ## SavedVariables & Configuration
 

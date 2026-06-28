@@ -84,6 +84,10 @@ ShuffleStone/
 ├── Libs/                   # Embedded libraries
 │   ├── LibStub/
 │   └── CallbackHandler-1.0/
+├── release-notes/          # Per-version release notes (one file per version)
+├── .pkgmeta                # Packager config for the release workflow
+├── .github/workflows/
+│   └── release.yml         # CI: tag push → package + upload to CurseForge, Wago, GitHub
 └── build.sh                # CurseForge build script
 ```
 
@@ -157,9 +161,32 @@ All your lists, toy selections, and rotation state are saved across WoW sessions
 
 ## Version
 
-**Current Version:** 1.0.0
+**Current Version:** 1.0.7
 **Author:** justLuther
 **License:** MIT
+
+## Releasing
+
+Releases are built and published by GitHub Actions (`.github/workflows/release.yml`)
+using the [BigWigsMods packager](https://github.com/BigWigsMods/packager), triggered
+when you push a **version tag**.
+
+To cut a release:
+
+1. Bump `## Version` in `ShuffleStone.toc` and create `release-notes/<version>.md` with
+   that version's notes — this file becomes the changelog shown on CurseForge/Wago.
+2. Commit, then tag and push the tag:
+   ```bash
+   git tag v1.0.8
+   git push origin v1.0.8
+   ```
+3. The workflow packages the addon and uploads it to CurseForge, Wago, and GitHub Releases.
+
+**One-time setup:** add the `CF_API_KEY` and `WAGO_API_KEY` repository secrets
+(Settings → Secrets and variables → Actions). Both are required — if either is missing
+the workflow skips the upload (with a warning) rather than publishing to only one
+platform. Project IDs live in `ShuffleStone.toc` (`## X-Curse-Project-ID`, `## X-Wago-ID`).
+`build.sh` remains available for manual local packaging.
 
 ## Contributing
 
