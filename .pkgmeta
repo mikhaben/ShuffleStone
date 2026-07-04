@@ -19,12 +19,14 @@ ignore:
   - .github
   - .pkgmeta
   - .gitignore
+  - .env
+  - .env.example
   - .claude
   - CLAUDE.md
   - MARKETING.md
   - build
   - build.sh
-  - deploy.sh
+  - deploy-local.sh
   - release-notes
   - CHANGELOG.md
   - .DS_Store

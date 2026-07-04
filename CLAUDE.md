@@ -43,7 +43,8 @@ ShuffleStone/
 ├── .github/workflows/
 │   └── release.yml            # CI: on tag push, package + upload to CurseForge/Wago/GitHub
 ├── build.sh                   # CurseForge build script
-└── deploy.sh                  # Deployment helper
+├── deploy-local.sh            # Local dev: build + install into your WoW AddOns folder (path from .env)
+└── .env.example               # Template for .env (gitignored); set WOW_ADDONS_DIR to your AddOns path
 ```
 
 ## Releasing

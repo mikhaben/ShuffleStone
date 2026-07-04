@@ -13,5 +13,8 @@ CHANGELOG.md
 *.swo
 *~
 
+# Local deploy config (see .env.example)
+.env
+
 # Claude
 .claude/settings.local.json
