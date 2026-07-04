@@ -63,5 +63,6 @@ NS.HEARTHSTONE_TOYS = {
     { id = 257736, name = "Lightcalled Hearthstone" },
     { id = 263489, name = "Naaru's Enfold" },
     { id = 263933, name = "Preyseeker's Hearthstone" },
+    { id = 264367, name = "Mycomancer's Hearthspore" },
     { id = 265100, name = "Corewarden's Hearthstone" },
 }

@@ -2,7 +2,7 @@
 ## Title: ShuffleStone
 ## Notes: Randomize hearthstone toys with custom lists
 ## Author: justLuther
-## Version: 1.0.7
+## Version: 1.0.8
 ## IconTexture: Interface\AddOns\ShuffleStone\Assets\logo
 ## SavedVariables: ShuffleStoneDB
 ## X-Curse-Project-ID: 1469940
