@@ -7,6 +7,7 @@ A World of Warcraft addon that rotates through hearthstone toys with a shuffle-b
 - `/ss` or `/shufflestone` — Toggle main UI window
 - `/ss debug` — Print debug info (owned toys, lists, macros, rotation state)
 - `./build.sh` — Create versioned CurseForge zip (`build/ShuffleStone_<version>_<date>.zip`)
+- `./deploy-local.sh` — Build + install into the local WoW AddOns folder (path from gitignored `.env`)
 
 ## Architecture
 
@@ -18,7 +19,7 @@ Key pattern: Pre-selected toys queued into SecureActionButton attributes (not Pr
 
 ```
 ShuffleStone/
-├── ShuffleStone.toc           # Addon manifest (interface 120007, version 1.0.7)
+├── ShuffleStone.toc           # Addon manifest (interface 120007, version 1.0.8)
 ├── Core.lua                   # Namespace, SavedVariables init, event handling, slash commands
 ├── Data.lua                   # Hearthstone toy registry (id, name pairs; 40+ toys)
 ├── Constants.lua              # UI constants (sizes, textures, colors), helpers
@@ -40,8 +41,14 @@ ShuffleStone/
 │   └── CallbackHandler-1.0/   # Event system for inter-component communication
 ├── release-notes/             # Per-version changelog (release-notes/<version>.md → CurseForge/Wago)
 ├── .pkgmeta                   # BigWigsMods packager config (manual-changelog, ignore list)
-├── .github/workflows/
-│   └── release.yml            # CI: on tag push, package + upload to CurseForge/Wago/GitHub
+├── .github/
+│   ├── workflows/
+│   │   └── release.yml        # CI: on v* tag push (tag must be on main), package + upload to CurseForge/Wago/GitHub
+│   ├── ISSUE_TEMPLATE/        # Bug report + feature request templates
+│   └── PULL_REQUEST_TEMPLATE.md
+├── LICENSE                    # MIT, copyright justLuther (ships in the release zip)
+├── CONTRIBUTING.md            # Build/test/style guide for contributors (excluded from zip)
+├── MARKETING.md               # CurseForge listing copy: description with badges, categories, tags
 ├── build.sh                   # CurseForge build script
 ├── deploy-local.sh            # Local dev: build + install into your WoW AddOns folder (path from .env)
 └── .env.example               # Template for .env (gitignored); set WOW_ADDONS_DIR to your AddOns path
@@ -49,11 +56,11 @@ ShuffleStone/
 
 ## Releasing
 
-CI (`.github/workflows/release.yml`) runs the [BigWigsMods packager](https://github.com/BigWigsMods/packager) on pushed version tags (`v*`) and uploads to CurseForge, Wago, and GitHub Releases. Tag-driven because the packager refuses to package a tag reached via a branch push. `.pkgmeta` controls zip contents — embedded Libs ship; dev/tooling files are stripped via `ignore`.
+CI (`.github/workflows/release.yml`) runs the [BigWigsMods packager](https://github.com/BigWigsMods/packager) on pushed version tags (`v*`) and uploads to CurseForge, Wago, and GitHub Releases. Tag-driven because the packager refuses to package a tag reached via a branch push. The workflow only publishes tags pointing to commits on `main` (ancestry check) and the packager action is pinned to a commit SHA against supply-chain compromise. `.pkgmeta` controls zip contents — embedded Libs ship; dev/tooling files are stripped via `ignore`.
 
 Per-version changelog: the CurseForge/Wago description comes from `release-notes/<version>.md`, copied to `CHANGELOG.md` (gitignored) by the workflow and fed to the packager via `manual-changelog`.
 
-Release: bump `## Version`, add `release-notes/<version>.md`, commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`. Requires repo secrets `CF_API_KEY` + `WAGO_API_KEY` (both, or deploy is skipped); project IDs live in the TOC (`X-Curse-Project-ID`, `X-Wago-ID`).
+Release: bump `## Version`, add `release-notes/<version>.md`, land the commit on `main` via PR — a repo ruleset blocks direct pushes, force-pushes, and deletion on `main`, and restricts `v*` tag creation to admins — then `git tag vX.Y.Z && git push origin vX.Y.Z`. Requires repo secrets `CF_API_KEY` + `WAGO_API_KEY` (both, or deploy is skipped); project IDs live in the TOC (`X-Curse-Project-ID`, `X-Wago-ID`).
 
 ## SavedVariables & Configuration
 
@@ -72,7 +79,7 @@ Core doesn't track UNIT_SPELLCAST_SUCCEEDED — rotation advances on button clic
 - **No external UI libs** — Uses raw WoW templates (BasicFrameTemplateWithInset, UIDropDownMenuTemplate) to keep addon lightweight
 - **Reusable button pool** — 40 icon buttons pre-allocated and reused, reducing allocations during frequent list switches
 - **Memory optimization** — Pre-allocated buffers (ownedToysBuffer, dropdownBuffer) refilled instead of allocating fresh tables on each refresh
-- **Combat safety** — All destructive ops (macro creation, list deletion) guarded by InCombatLockdown(), deferred to PLAYER_REGEN_ENABLED if needed
+- **Combat safety** — All destructive ops (macro creation, list deletion) are guarded by InCombatLockdown() and silently skipped during combat — there is no deferral queue; the operation must be retried after combat
 - **Centralized constants** — Constants.lua loaded before Core/UI so all modules share textures, colors, sizing without duplication
 
 ## Non-Obvious Behaviors
