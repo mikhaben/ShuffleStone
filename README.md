@@ -3,7 +3,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CurseForge](https://img.shields.io/badge/CurseForge-Download-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/shufflestone-random-hearthstone)
 [![Wago](https://img.shields.io/badge/Wago-Download-A34FE0)](https://addons.wago.io/addons/shufflestone-random-hearthstone)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/justluther)
 
 A World of Warcraft addon that randomizes your hearthstone toys with a shuffle-bag rotation algorithm, ensuring no repeats until all toys in your list are used.
 
