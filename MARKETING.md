@@ -35,7 +35,9 @@ ShuffleStone randomizes which hearthstone toy you use each time you press your m
 - **Visual Toy Picker** - Browse all hearthstones in a clean icon grid. Green checkmarks show which are in your list, lock badges mark unobtained toys
 - **Show Unobtained Toggle** - See only owned toys or browse the full collection
 - **One-Click Management** - Click a toy icon to add/remove it from your current list
-- **Custom List Icons** - Cycle through hearthstone icons to personalize each list's macro appearance
+- **Custom List Icons** - Pick any hearthstone icon for each list from a visual icon picker
+- **Live Tooltip & Cooldown** - The action bar button shows the queued hearthstone's real tooltip and cooldown swipe, not just an icon
+- **Any Language Client** - Macros reference toys by ID, not localized names, so everything works on non-English clients
 - **Combat Safe** - Uses SecureActionButton so your macro works mid-combat without taint
 - **Lightweight** - No AceGUI, no heavy libraries. Raw WoW frames, pre-allocated icon pools, reusable buffers. Minimal memory and CPU footprint
 - **Persistent State** - Lists, toy selections, rotation progress, and window position all saved across sessions
