@@ -18,6 +18,9 @@ Randomize your hearthstone toys with no repeats. Shuffle-bag rotation across all
 
 ## Full Description
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/justluther)
+[![GitHub](https://img.shields.io/badge/GitHub-Source_Code-181717?style=for-the-badge&logo=github)](https://github.com/mikhaben/ShuffleStone)
+
 ### What is ShuffleStone?
 
 ShuffleStone randomizes which hearthstone toy you use each time you press your macro. It cycles through every toy in your list before repeating any, so you get maximum variety with zero effort. Create custom lists, drag a macro to your action bar, and enjoy a different hearthstone animation every time you hearth.
@@ -32,7 +35,9 @@ ShuffleStone randomizes which hearthstone toy you use each time you press your m
 - **Visual Toy Picker** - Browse all hearthstones in a clean icon grid. Green checkmarks show which are in your list, lock badges mark unobtained toys
 - **Show Unobtained Toggle** - See only owned toys or browse the full collection
 - **One-Click Management** - Click a toy icon to add/remove it from your current list
-- **Custom List Icons** - Cycle through hearthstone icons to personalize each list's macro appearance
+- **Custom List Icons** - Pick any hearthstone icon for each list from a visual icon picker
+- **Live Tooltip & Cooldown** - The action bar button shows the queued hearthstone's real tooltip and cooldown swipe, not just an icon
+- **Any Language Client** - Macros reference toys by ID, not localized names, so everything works on non-English clients
 - **Combat Safe** - Uses SecureActionButton so your macro works mid-combat without taint
 - **Lightweight** - No AceGUI, no heavy libraries. Raw WoW frames, pre-allocated icon pools, reusable buffers. Minimal memory and CPU footprint
 - **Persistent State** - Lists, toy selections, rotation progress, and window position all saved across sessions

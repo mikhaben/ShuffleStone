@@ -1,6 +1,9 @@
 # ShuffleStone
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CurseForge](https://img.shields.io/badge/CurseForge-Download-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/shufflestone-random-hearthstone)
+[![Wago](https://img.shields.io/badge/Wago-Download-A34FE0)](https://addons.wago.io/addons/shufflestone-random-hearthstone)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/justluther)
 
 A World of Warcraft addon that randomizes your hearthstone toys with a shuffle-bag rotation algorithm, ensuring no repeats until all toys in your list are used.
 
@@ -77,7 +80,9 @@ ShuffleStone/
 │   ├── Rotation.lua        # No-repeat shuffle algorithm with anti-repeat
 │   └── Buttons.lua         # Macro and button management
 ├── UI/
+│   ├── WindowFactory.lua   # Frame template factory (inset, resizable windows)
 │   ├── IconGrid.lua        # Reusable toy icon grid
+│   ├── IconPicker.lua      # Icon picker for list customization
 │   ├── ListEditor.lua      # List management rows
 │   ├── MainFrame.lua       # Main window and integration
 │   └── Settings.lua        # Settings panel configuration
@@ -88,9 +93,13 @@ ShuffleStone/
 │   └── CallbackHandler-1.0/
 ├── release-notes/          # Per-version release notes (one file per version)
 ├── .pkgmeta                # Packager config for the release workflow
-├── .github/workflows/
-│   └── release.yml         # CI: tag push → package + upload to CurseForge, Wago, GitHub
-└── build.sh                # CurseForge build script
+├── .github/                # Release workflow + issue/PR templates
+│   └── workflows/
+│       └── release.yml     # CI: tag push → package + upload to CurseForge, Wago, GitHub
+├── LICENSE                 # MIT
+├── CONTRIBUTING.md         # How to build, test, and submit PRs
+├── build.sh                # CurseForge build script
+└── deploy-local.sh         # Build + install into your local WoW AddOns folder
 ```
 
 ## Supported Hearthstones
@@ -177,7 +186,8 @@ To cut a release:
 
 1. Bump `## Version` in `ShuffleStone.toc` and create `release-notes/<version>.md` with
    that version's notes — this file becomes the changelog shown on CurseForge/Wago.
-2. Commit, then tag and push the tag:
+2. Land the bump on `main` via pull request (direct pushes to `main` are blocked),
+   then tag the merge commit and push the tag — only tags on `main` are published:
    ```bash
    git tag v1.0.8
    git push origin v1.0.8

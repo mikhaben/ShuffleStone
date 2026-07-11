@@ -29,9 +29,10 @@ name: Package and Release
 #  Project IDs live in ShuffleStone.toc (## X-Curse-Project-ID / ## X-Wago-ID).
 #
 # ── Security ─────────────────────────────────────────────────────────────────
-#  The packager is pinned to a full commit SHA (not the floating @v2 tag) so a
-#  compromised upstream release can't exfiltrate the API keys. To update, pick
-#  a new SHA from https://github.com/BigWigsMods/packager and bump it below.
+#  The checkout and packager actions are pinned to full commit SHAs (not the
+#  floating @v5/@v2 tags) so a compromised upstream release can't exfiltrate
+#  the API keys. To update, pick a new SHA from the action's releases page and
+#  bump it below.
 
 on:
   push:
@@ -60,7 +61,7 @@ jobs:
 
       - name: Checkout
         if: steps.creds.outputs.ready == 'true'
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0   # full history + tags for version detection
 
