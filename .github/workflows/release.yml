@@ -25,8 +25,9 @@ name: Package and Release
 #  Project IDs live in ShuffleStone.toc (## X-Curse-Project-ID / ## X-Wago-ID).
 #
 # ── Security ─────────────────────────────────────────────────────────────────
-#  `@v2` tracks the latest v2 release. To pin against a supply-chain compromise,
-#  replace it with a full commit SHA: BigWigsMods/packager@<40-char-sha>.
+#  The packager is pinned to a full commit SHA (not the floating @v2 tag) so a
+#  compromised upstream release can't exfiltrate the API keys. To update, pick
+#  a new SHA from https://github.com/BigWigsMods/packager and bump it below.
 
 on:
   push:
@@ -73,8 +74,8 @@ jobs:
 
       - name: Package and release
         if: steps.creds.outputs.ready == 'true'
-        uses: BigWigsMods/packager@v2
+        uses: BigWigsMods/packager@6d50adb6e8517eefef63f4afb16a6518166a6b28 # v2
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
-          WAGO_API_TOKEN: ${{ secrets.WAGO_API_KEY }}   # env var must stay WAGO_API_TOKEN (packager requirement); secret is WAGO_API_KEY for consistency
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_KEY }}
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}

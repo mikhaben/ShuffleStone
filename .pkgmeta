@@ -23,6 +23,7 @@ ignore:
   - .env.example
   - .claude
   - CLAUDE.md
+  - CONTRIBUTING.md
   - MARKETING.md
   - build
   - build.sh

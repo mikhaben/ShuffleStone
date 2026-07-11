@@ -1,5 +1,7 @@
 # ShuffleStone
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A World of Warcraft addon that randomizes your hearthstone toys with a shuffle-bag rotation algorithm, ensuring no repeats until all toys in your list are used.
 
 ## Features
@@ -161,7 +163,7 @@ All your lists, toy selections, and rotation state are saved across WoW sessions
 
 ## Version
 
-**Current Version:** 1.0.7
+**Current Version:** 1.0.8
 **Author:** justLuther
 **License:** MIT
 
@@ -190,8 +192,8 @@ platform. Project IDs live in `ShuffleStone.toc` (`## X-Curse-Project-ID`, `## X
 
 ## Contributing
 
-Found a bug or have a feature request? Open an issue or submit a pull request on the project repository.
+Found a bug or have a feature request? Open an issue or submit a pull request — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test, and what to expect in review.
 
 ## License
 
-ShuffleStone is provided as-is. Feel free to modify and redistribute under the MIT license.
+ShuffleStone is released under the [MIT License](LICENSE).
