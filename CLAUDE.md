@@ -19,7 +19,7 @@ Key pattern: Pre-selected toys queued into SecureActionButton attributes (not Pr
 
 ```
 ShuffleStone/
-├── ShuffleStone.toc           # Addon manifest (interface 120007, version 1.0.8)
+├── ShuffleStone.toc           # Addon manifest (interface 120105, version 1.0.9)
 ├── Core.lua                   # Namespace, SavedVariables init, event handling, slash commands
 ├── Data.lua                   # Hearthstone toy registry (id, name pairs; 40+ toys)
 ├── Constants.lua              # UI constants (sizes, textures, colors), helpers
@@ -29,7 +29,7 @@ ShuffleStone/
 │   └── Buttons.lua            # SecureActionButton pool, macro creation/management
 ├── UI/
 │   ├── WindowFactory.lua       # Frame template factory (inset, resizable windows)
-│   ├── IconGrid.lua           # Wrapping icon grid with pooling (40 pre-allocated buttons)
+│   ├── IconGrid.lua           # Wrapping icon grid with pooling (one pre-allocated button per registry toy)
 │   ├── IconPicker.lua         # Icon picker for list customization
 │   ├── ListEditor.lua         # List row: macro drag target, name edit, icon/delete
 │   ├── MainFrame.lua          # Main window (dropdown, toy grid, list editor, add button)
@@ -77,7 +77,7 @@ Core doesn't track UNIT_SPELLCAST_SUCCEEDED — rotation advances on button clic
 ## Key Design Decisions
 
 - **No external UI libs** — Uses raw WoW templates (BasicFrameTemplateWithInset, UIDropDownMenuTemplate) to keep addon lightweight
-- **Reusable button pool** — 40 icon buttons pre-allocated and reused, reducing allocations during frequent list switches
+- **Reusable button pool** — one icon button per registry toy, pre-allocated and reused, reducing allocations during frequent list switches
 - **Memory optimization** — Pre-allocated buffers (ownedToysBuffer, dropdownBuffer) refilled instead of allocating fresh tables on each refresh
 - **Combat safety** — All destructive ops (macro creation, list deletion) are guarded by InCombatLockdown() and silently skipped during combat — there is no deferral queue; the operation must be retried after combat
 - **Centralized constants** — Constants.lua loaded before Core/UI so all modules share textures, colors, sizing without duplication
