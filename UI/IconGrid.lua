@@ -67,7 +67,7 @@ function NS.CreateIconGrid(opts)
 
     -- Create a pool of icon buttons
     local pool = {}
-    local poolSize = 40 -- enough for all hearthstone toys
+    local poolSize = #NS.HEARTHSTONE_TOYS
 
     for i = 1, poolSize do
         local btn = CreateIconButton(container, i)

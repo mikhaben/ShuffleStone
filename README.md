@@ -58,7 +58,7 @@ Switch between your saved lists (e.g., "All Hearthstones", "Favorites"). Changin
 ## Tech Stack
 
 - **Language:** Lua (WoW addon API)
-- **WoW Interface:** 120007 (Midnight)
+- **WoW Interface:** 120105 (Midnight)
 - **UI Framework:** Raw WoW frame API (no AceGUI)
 - **Templates Used:**
   - BasicFrameTemplateWithInset (floating window)
@@ -171,7 +171,7 @@ All your lists, toy selections, and rotation state are saved across WoW sessions
 
 ## Version
 
-**Current Version:** 1.0.8
+**Current Version:** 1.0.9
 **Author:** justLuther
 **License:** MIT
 

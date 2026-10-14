@@ -29,6 +29,9 @@ NS.HEARTHSTONE_TOYS = {
     { id = 163045, name = "Headless Horseman's Hearthstone" },
     { id = 162973, name = "Greatfather Winter's Hearthstone" },
 
+    -- Expansion: Battle for Azeroth
+    { id = 163206, name = "Weary Spirit Binding" },
+
     -- Expansion: Shadowlands
     { id = 180290, name = "Night Fae Hearthstone" },
     { id = 182773, name = "Necrolord Hearthstone" },
@@ -65,4 +68,6 @@ NS.HEARTHSTONE_TOYS = {
     { id = 263933, name = "Preyseeker's Hearthstone" },
     { id = 264367, name = "Mycomancer's Hearthspore" },
     { id = 265100, name = "Corewarden's Hearthstone" },
+    { id = 281136, name = "Hiveborne Hearthstone" },
+    { id = 281615, name = "Shadeweaver's Hearthstone" },
 }
