@@ -1,8 +1,3 @@
---[[
-    ShuffleStone - Hearthstone Toy Randomizer
-    UI/IconPicker.lua - Icon picker window (docked grid of all hearthstones)
-]]--
-
 local _, NS = ...
 
 local iconPickerFrame = nil
@@ -12,13 +7,11 @@ local PICKER_ICON = NS.PICKER_ICON_SIZE
 local PICKER_GAP  = NS.PICKER_GAP
 local PICKER_PAD  = NS.PICKER_PAD
 
--- Include base hearthstone in picker (not part of toy rotation)
 local pickerToys = { NS.BASE_HEARTHSTONE }
 for _, toyData in ipairs(NS.HEARTHSTONE_TOYS) do
     pickerToys[#pickerToys + 1] = toyData
 end
 
--- Stable click handler (avoids closure allocation per picker open)
 local function OnPickerButtonClick(self)
     local picker = self:GetParent()
     local listKey = picker.activeListKey
@@ -26,7 +19,6 @@ local function OnPickerButtonClick(self)
     local selectedInfo = NS.scannedToys[selectedToyID]
     local selectedIcon = selectedInfo and selectedInfo.icon or NS.DEFAULT_ICON
 
-    -- Update list icon data
     if listKey == "__all__" then
         NS.db.allIcon = selectedIcon
         NS.db.allIconToyID = selectedToyID
@@ -38,12 +30,10 @@ local function OnPickerButtonClick(self)
         end
     end
 
-    -- Update macro icon when dynamic icon is off
     if not NS.IsDynamicIcon(listKey) then
         NS.SetMacroIcon(listKey, selectedIcon)
     end
 
-    -- Update all checkmarks
     for j = 1, #picker.buttons do
         local b = picker.buttons[j]
         if b and b:IsShown() then
@@ -73,7 +63,6 @@ end
 function NS.ShowIconPicker(listKey, parentFrame)
     local picker = CreateIconPicker(parentFrame)
 
-    -- Determine current active toyID for checkmark
     local activeToyID
     if listKey == "__all__" then
         activeToyID = NS.db.allIconToyID
@@ -84,12 +73,10 @@ function NS.ShowIconPicker(listKey, parentFrame)
 
     picker.activeListKey = listKey
 
-    -- Hide old buttons
     for _, btn in ipairs(picker.buttons) do
         btn:Hide()
     end
 
-    -- Build icon list from ALL hearthstone toys
     local visibleIdx = 0
 
     for _, toyData in ipairs(pickerToys) do
@@ -127,16 +114,13 @@ function NS.ShowIconPicker(listKey, parentFrame)
 
         btn.toyID = toyID
 
-        -- Set icon texture (all vibrant — picker is for choosing list icon)
         local icon = (info and info.icon) or NS.DEFAULT_ICON
         btn.tex:SetTexture(icon)
         btn.tex:SetDesaturated(false)
         btn.tex:SetAlpha(1)
 
-        -- Checkmark on active icon
         btn.check:SetShown(toyID == activeToyID)
 
-        -- Position in grid
         local col = (visibleIdx - 1) % PICKER_COLS
         local row = math.floor((visibleIdx - 1) / PICKER_COLS)
         btn:ClearAllPoints()
@@ -147,7 +131,6 @@ function NS.ShowIconPicker(listKey, parentFrame)
         btn:Show()
     end
 
-    -- Size the frame to fit the grid
     local cols = math.min(visibleIdx, PICKER_COLS)
     local rows = math.ceil(visibleIdx / PICKER_COLS)
     local gridW = cols * (PICKER_ICON + PICKER_GAP) - PICKER_GAP

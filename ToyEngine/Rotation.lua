@@ -1,12 +1,5 @@
---[[
-    ShuffleStone - Hearthstone Toy Randomizer
-    ToyEngine/Rotation.lua - No-repeat shuffle rotation per list
-]]--
-
 local _, NS = ...
 
--- Pick next random toy for a list key ("__all__" or list name)
--- Returns toyID or nil if no toys available
 function NS.PickNextToy(listKey)
     local db = NS.db
     if not db.rotationState[listKey] then
@@ -22,12 +15,10 @@ function NS.PickNextToy(listKey)
         return pool[1]
     end
 
-    -- Refill when empty
     if #state.remaining == 0 then
         for _, id in ipairs(pool) do
             table.insert(state.remaining, id)
         end
-        -- Anti-repeat: move lastUsed to end so it's excluded from next pick
         if state.lastUsed and #state.remaining > 1 then
             local found = false
             for i, id in ipairs(state.remaining) do
@@ -44,7 +35,6 @@ function NS.PickNextToy(listKey)
         end
     end
 
-    -- Swap-and-pop: exclude last element if it matches lastUsed (anti-repeat)
     local pickMax = #state.remaining
     if pickMax > 1 and state.remaining[pickMax] == state.lastUsed then
         pickMax = pickMax - 1

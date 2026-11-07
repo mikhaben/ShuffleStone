@@ -4,7 +4,7 @@ Thanks for your interest! Bug reports, feature requests, and pull requests are a
 
 ## Building locally
 
-No toolchain needed beyond bash and zip. Lint with [luacheck](https://github.com/lunarmodules/luacheck) (`brew install luacheck`): `luacheck .` should report 0 warnings.
+No toolchain needed beyond bash and zip. Before opening a PR, run `./check.sh` (needs `brew install luacheck ast-grep`): it lints with [luacheck](https://github.com/lunarmodules/luacheck), rejects code comments, and caps a Lua file at 1000 lines.
 
 ```bash
 ./build.sh
@@ -33,6 +33,7 @@ There is no automated test suite; testing is in-game:
 
 Match the surrounding code. In particular:
 
+- No comments in the code: say it with a name, and put the reason for a change in the commit message. `./check.sh` rejects them.
 - 4-space indentation, Lua, raw WoW frame API — **no external UI libraries** (no Ace); only the embedded LibStub/CallbackHandler.
 - Avoid per-frame/per-refresh allocations: reuse the existing button pools and pre-allocated buffers rather than creating fresh tables.
 - Anything that touches macros or secure buttons must be combat-safe: check `InCombatLockdown()` first and refuse during combat (user actions print a message; see `ToyEngine/Buttons.lua` and `UI/MainFrame.lua`). Nothing is queued for after combat.

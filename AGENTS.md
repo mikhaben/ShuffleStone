@@ -8,8 +8,10 @@ It stays a small, dependency-free addon (no Ace, only the embedded LibStub/Callb
 
 ## Commands
 
-- `luacheck .` — lint; must report 0 warnings. Config in `.luacheckrc`: a new WoW API the addon
-  reads goes in `read_globals`, a global it writes goes in `globals`.
+- `./check.sh` — must pass before a commit. It runs `luacheck .` (config in `.luacheckrc`: a new
+  WoW API the addon reads goes in `read_globals`, a global it writes goes in `globals`), the
+  no-comments rule (`ast-grep scan`, rule in `lint-rules/`) and the 1000-line cap per Lua file.
+  Needs `brew install luacheck ast-grep`.
 - `./build.sh` — versioned zip in `build/`.
 - `./deploy-local.sh` — build and install into the local AddOns folder (`WOW_ADDONS_DIR` in the
   gitignored `.env`, template `.env.example`).
@@ -23,7 +25,7 @@ Load order is the file list in `ShuffleStone.toc`; every file shares the addon n
 | Feature | Where |
 | --- | --- |
 | Events, SavedVariables defaults and merge, slash commands, debug dump | `Core.lua` |
-| Hearthstone toy registry (id, name) | `Data.lua` |
+| Hearthstone toy registry (id, name); new toys from [Wowpedia](https://wowpedia.fandom.com/wiki/Category:Hearthstones) and [Wowhead](https://www.wowhead.com/items/consumables/toys) | `Data.lua` |
 | Sizes, textures, colors, shared helpers | `Constants.lua` |
 | Toy ownership scan, list lookups | `ToyEngine/Scanner.lua` |
 | Shuffle-bag pick and reset per list | `ToyEngine/Rotation.lua` |
@@ -42,6 +44,12 @@ Load order is the file list in `ShuffleStone.toc`; every file shares the addon n
   `InCombatLockdown()` first. User actions print "Cannot … during combat" and do nothing; internal
   calls return early. Nothing is queued for after combat, so the user retries.
 - Refreshes reuse the button pools and pre-allocated buffers instead of building new tables.
+  `NS.GetOwnedToysForList` (for a custom list) and `NS.GetListsContainingToy` return a buffer the
+  next call overwrites; copy it before keeping it.
+- `TOYS_UPDATED` fires in bursts, so Core coalesces it into one rescan at the end of the frame.
+  `NS:NEW_TOY_ADDED` rescans at once and suppresses the `TOYS_UPDATED` that follows.
+- `NS.UpdateMacroIcon` edits the macro one frame later (`C_Timer.After(0)`), so a macro body is
+  never edited while it runs.
 - UI sizes, textures and colors come from `Constants.lua`.
 - The icon picker shows every icon at full brightness on purpose: it picks a look, not a toy the
   player owns.

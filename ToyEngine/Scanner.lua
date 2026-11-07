@@ -1,15 +1,8 @@
---[[
-    ShuffleStone - Hearthstone Toy Randomizer
-    ToyEngine/Scanner.lua - Toy ownership scanning and filtered list building
-]]--
-
 local _, NS = ...
 
--- Runtime scan results (not persisted)
-NS.scannedToys = {}   -- { [itemID] = { name, icon, owned } }
-NS.ownedToyIDs = {}   -- ordered array of owned toy IDs
+NS.scannedToys = {}
+NS.ownedToyIDs = {}
 
--- Reusable buffers (avoids allocation per call)
 local listsBuffer = {}
 local ownedToysBuffer = {}
 local EMPTY = {}
@@ -42,7 +35,6 @@ function NS.ScanToys()
 
 end
 
--- Find a list object by name. Returns list table or nil.
 function NS.GetListByName(listName)
     for _, list in ipairs(NS.db.lists) do
         if list.name == listName then
@@ -52,9 +44,6 @@ function NS.GetListByName(listName)
     return nil
 end
 
--- Get owned toy IDs for a list key ("__all__" or list name)
--- Returns the shared ownedToyIDs for "__all__", or builds a filtered array.
--- WARNING: for custom lists, returned table is reused on next call - do not store a reference.
 function NS.GetOwnedToysForList(listKey)
     if listKey == "__all__" then
         return NS.ownedToyIDs
@@ -76,8 +65,6 @@ function NS.GetOwnedToysForList(listKey)
     return ownedToysBuffer
 end
 
--- Get all list names containing a toy. Reuses a buffer table (zero allocation).
--- WARNING: returned table is reused on next call - do not store a reference.
 function NS.GetListsContainingToy(toyID)
     wipe(listsBuffer)
     for _, list in ipairs(NS.db.lists) do
