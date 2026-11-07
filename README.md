@@ -58,48 +58,12 @@ Switch between your saved lists (e.g., "All Hearthstones", "Favorites"). Changin
 ## Tech Stack
 
 - **Language:** Lua (WoW addon API)
-- **WoW Interface:** 120105 (Midnight)
 - **UI Framework:** Raw WoW frame API (no AceGUI)
 - **Templates Used:**
   - BasicFrameTemplateWithInset (floating window)
   - UIDropDownMenuTemplate (list selector)
   - UIPanelScrollFrameTemplate (scrollable lists)
   - SecureActionButtonTemplate (combat-safe macros)
-
-## Project Structure
-
-```
-ShuffleStone/
-├── ShuffleStone.toc        # Addon manifest and load order
-├── Core.lua                # Main namespace, SavedVariables, event handlers
-├── Data.lua                # Toy registry (all hearthstones) and toy constants
-├── Constants.lua           # Centralized UI constants, textures, colors
-├── ToyEngine/
-│   ├── Scanner.lua         # Toy ownership detection
-│   ├── Rotation.lua        # No-repeat shuffle algorithm with anti-repeat
-│   └── Buttons.lua         # Macro and button management
-├── UI/
-│   ├── WindowFactory.lua   # Frame template factory (inset, resizable windows)
-│   ├── IconGrid.lua        # Reusable toy icon grid
-│   ├── IconPicker.lua      # Icon picker for list customization
-│   ├── ListEditor.lua      # List management rows
-│   ├── MainFrame.lua       # Main window and integration
-│   └── Settings.lua        # Settings panel configuration
-├── Assets/
-│   └── logo.tga            # Custom addon icon
-├── Libs/                   # Embedded libraries
-│   ├── LibStub/
-│   └── CallbackHandler-1.0/
-├── release-notes/          # Per-version release notes (one file per version)
-├── .pkgmeta                # Packager config for the release workflow
-├── .github/                # Release workflow + issue/PR templates
-│   └── workflows/
-│       └── release.yml     # CI: tag push → package + upload to CurseForge, Wago, GitHub
-├── LICENSE                 # MIT
-├── CONTRIBUTING.md         # How to build, test, and submit PRs
-├── build.sh                # CurseForge build script
-└── deploy-local.sh         # Build + install into your local WoW AddOns folder
-```
 
 ## Supported Hearthstones
 
@@ -169,35 +133,14 @@ All your lists, toy selections, and rotation state are saved across WoW sessions
 2. Check that `ShuffleStoneDB` is present in your WoW SavedVariables
 3. Try creating a new list and manually adding the toy again
 
-## Version
+## Author
 
-**Current Version:** 1.0.9
-**Author:** justLuther
-**License:** MIT
+justLuther
 
 ## Releasing
 
-Releases are built and published by GitHub Actions (`.github/workflows/release.yml`)
-using the [BigWigsMods packager](https://github.com/BigWigsMods/packager), triggered
-when you push a **version tag**.
-
-To cut a release:
-
-1. Bump `## Version` in `ShuffleStone.toc` and create `release-notes/<version>.md` with
-   that version's notes — this file becomes the changelog shown on CurseForge/Wago.
-2. Land the bump on `main` via pull request (direct pushes to `main` are blocked),
-   then tag the merge commit and push the tag — only tags on `main` are published:
-   ```bash
-   git tag v1.0.8
-   git push origin v1.0.8
-   ```
-3. The workflow packages the addon and uploads it to CurseForge, Wago, and GitHub Releases.
-
-**One-time setup:** add the `CF_API_KEY` and `WAGO_API_KEY` repository secrets
-(Settings → Secrets and variables → Actions). Both are required — if either is missing
-the workflow skips the upload (with a warning) rather than publishing to only one
-platform. Project IDs live in `ShuffleStone.toc` (`## X-Curse-Project-ID`, `## X-Wago-ID`).
-`build.sh` remains available for manual local packaging.
+Releases are cut by the maintainer by pushing a version tag on `main`; the steps are in the header of
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Contributing
 

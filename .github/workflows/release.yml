@@ -14,7 +14,9 @@ name: Package and Release
 # Release flow:
 #   1. Bump ## Version in ShuffleStone.toc and add release-notes/<version>.md
 #      (this file becomes the CurseForge/Wago changelog).
-#   2. Commit, then tag and push the tag:
+#   2. Commit on develop and land it on main through a develop → main pull
+#      request (a ruleset blocks direct pushes to main).
+#   3. Tag the commit on main and push the tag (v* tags are admin-only):
 #        git tag v1.0.8
 #        git push origin v1.0.8
 #
