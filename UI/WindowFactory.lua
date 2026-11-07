@@ -6,7 +6,7 @@
     Docked  (anchor given): attached to another frame, static
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 local DEFAULT_MIN_H = 60
 local DEFAULT_MAX_H = 800

@@ -3,7 +3,7 @@
     ToyEngine/Scanner.lua - Toy ownership scanning and filtered list building
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 -- Runtime scan results (not persisted)
 NS.scannedToys = {}   -- { [itemID] = { name, icon, owned } }

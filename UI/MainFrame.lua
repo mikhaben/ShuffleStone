@@ -3,7 +3,7 @@
     UI/MainFrame.lua - Custom floating window (Cooldown Manager style)
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 local WINDOW_WIDTH = NS.WINDOW_WIDTH
 local SECTION_GAP = NS.SECTION_GAP
@@ -71,7 +71,7 @@ local function CreateDropdown(parent)
     dropdown:SetWidth(200)
     dropdown:SetDefaultText(NS.ALL_DISPLAY_NAME)
 
-    local function SetupMenu(dd, rootDescription)
+    local function SetupMenu(_, rootDescription)
         local values = GetListDropdownValues()
         for _, v in ipairs(values) do
             rootDescription:CreateRadio(v.text,

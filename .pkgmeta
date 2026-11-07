@@ -19,6 +19,7 @@ ignore:
   - .github
   - .pkgmeta
   - .gitignore
+  - .luacheckrc
   - .env
   - .env.example
   - .claude

@@ -3,7 +3,7 @@
     ToyEngine/Buttons.lua - SecureActionButton creation, macro management
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 NS.buttons = {}     -- { [listKey] = secureButton }
 NS.macroNames = {}  -- { [listKey] = "SS: All" or "SS: Favorites" }

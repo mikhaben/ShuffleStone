@@ -174,7 +174,7 @@ function NS.PrintDebugInfo()
 
     -- Macros
     p("Macros:")
-    for listKey, macroName in pairs(NS.macroNames) do
+    for _, macroName in pairs(NS.macroNames) do
         local macroID = GetMacroIndexByName(macroName)
         local status = (macroID and macroID > 0) and "|cff00ff00OK|r" or "|cffff0000MISSING|r"
         p("  " .. macroName .. " — " .. status)

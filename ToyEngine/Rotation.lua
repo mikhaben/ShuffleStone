@@ -3,7 +3,7 @@
     ToyEngine/Rotation.lua - No-repeat shuffle rotation per list
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 -- Pick next random toy for a list key ("__all__" or list name)
 -- Returns toyID or nil if no toys available
