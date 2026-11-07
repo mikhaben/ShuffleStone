@@ -3,7 +3,7 @@
     UI/IconGrid.lua - Reusable icon grid component with wrapping flow layout
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 -- Local aliases for hot-path layout constants
 local ICON_SIZE = NS.ICON_SIZE
@@ -11,7 +11,7 @@ local ICON_GAP = NS.ICON_GAP
 local BADGE_SIZE = NS.BADGE_SIZE
 
 -- Create a single icon button
-local function CreateIconButton(parent, index)
+local function CreateIconButton(parent)
     local btn = CreateFrame("Button", nil, parent)
     btn:SetSize(ICON_SIZE, ICON_SIZE)
 
@@ -70,7 +70,7 @@ function NS.CreateIconGrid(opts)
     local poolSize = #NS.HEARTHSTONE_TOYS
 
     for i = 1, poolSize do
-        local btn = CreateIconButton(container, i)
+        local btn = CreateIconButton(container)
         btn:Hide()
 
         btn:SetScript("OnEnter", function(self)

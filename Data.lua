@@ -4,7 +4,7 @@
     Home hearthstones only (NOT Dalaran or Garrison)
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 -- Shared constants
 NS.DEFAULT_ICON = 134414     -- hearthstone icon texture ID

@@ -3,7 +3,7 @@
     UI/ListEditor.lua - List editor row (macro icon, name, controls, dynamic icon)
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 -- Create the list editor row
 -- Returns a frame with: macroIcon, nameEditBox, changeIconBtn, dynamicIconCB, deleteBtn

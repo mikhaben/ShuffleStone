@@ -3,7 +3,7 @@
     Constants.lua - Shared constants, textures, colors, helpers
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 -- Macro naming
 NS.MACRO_PREFIX = "SS: "

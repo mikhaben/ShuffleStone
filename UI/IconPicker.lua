@@ -3,7 +3,7 @@
     UI/IconPicker.lua - Icon picker window (docked grid of all hearthstones)
 ]]--
 
-local AddonName, NS = ...
+local _, NS = ...
 
 local iconPickerFrame = nil
 
