@@ -1,55 +1,41 @@
---[[
-    ShuffleStone - Hearthstone Toy Randomizer
-    UI/IconGrid.lua - Reusable icon grid component with wrapping flow layout
-]]--
-
 local _, NS = ...
 
--- Local aliases for hot-path layout constants
 local ICON_SIZE = NS.ICON_SIZE
 local ICON_GAP = NS.ICON_GAP
 local BADGE_SIZE = NS.BADGE_SIZE
 
--- Create a single icon button
 local function CreateIconButton(parent)
     local btn = CreateFrame("Button", nil, parent)
     btn:SetSize(ICON_SIZE, ICON_SIZE)
 
-    -- Icon texture
     btn.icon = btn:CreateTexture(nil, "ARTWORK")
     btn.icon:SetAllPoints()
     btn.icon:SetTexCoord(unpack(NS.ICON_TEXCOORD))
 
-    -- Border (BACKGROUND layer — renders behind ARTWORK icon, proper Blizzard proportions)
     btn.border = btn:CreateTexture(nil, "BACKGROUND")
     btn.border:SetTexture(NS.TEX_SLOT_BORDER)
     btn.border:SetSize(ICON_SIZE + 26, ICON_SIZE + 26)
     btn.border:SetPoint("CENTER", 0, -1)
 
-    -- Checkmark badge (bottom-right, for "in list" indicator)
     btn.checkmark = btn:CreateTexture(nil, "OVERLAY", nil, 2)
     btn.checkmark:SetSize(BADGE_SIZE, BADGE_SIZE)
     btn.checkmark:SetPoint("BOTTOMRIGHT", 2, -2)
     btn.checkmark:SetTexture(NS.TEX_CHECKMARK)
     btn.checkmark:Hide()
 
-    -- Lock badge (bottom-right, for unobtained)
     btn.lockIcon = btn:CreateTexture(nil, "OVERLAY")
     btn.lockIcon:SetSize(BADGE_SIZE, BADGE_SIZE)
     btn.lockIcon:SetPoint("BOTTOMRIGHT", 2, -2)
     btn.lockIcon:SetTexture(NS.TEX_LOCK)
     btn.lockIcon:Hide()
 
-    -- Hover overlay (+ or - indicator)
     btn.actionOverlay = btn:CreateTexture(nil, "OVERLAY", nil, 2)
     btn.actionOverlay:SetSize(18, 18)
     btn.actionOverlay:SetPoint("TOPRIGHT", 2, 2)
     btn.actionOverlay:Hide()
 
-    -- Highlight for hover feedback
     btn:SetHighlightTexture(NS.TEX_HIGHLIGHT, "ADD")
 
-    -- State
     btn.toyID = nil
     btn.isInList = false
     btn.isOwned = false
@@ -57,15 +43,12 @@ local function CreateIconButton(parent)
     return btn
 end
 
--- IconGrid factory
--- opts = { parent, isTopGrid, getListKey, onClick }
 function NS.CreateIconGrid(opts)
     local container = CreateFrame("Frame", nil, opts.parent)
     container.buttons = {}
     container.visibleCount = 0
     container.isTopGrid = opts.isTopGrid or false
 
-    -- Create a pool of icon buttons
     local pool = {}
     local poolSize = #NS.HEARTHSTONE_TOYS
 
@@ -82,12 +65,10 @@ function NS.CreateIconGrid(opts)
 
             GameTooltip:SetToyByItemID(self.toyID)
 
-            -- Add action hint
             GameTooltip:AddLine(" ")
             local listKey = opts.getListKey and opts.getListKey() or "__all__"
 
             if listKey == "__all__" then
-                -- No add/remove action for "All" view
                 if not info.owned then
                     GameTooltip:AddLine("Not collected", 1, 0.3, 0.3)
                 end
@@ -103,7 +84,6 @@ function NS.CreateIconGrid(opts)
                 end
             end
 
-            -- Show list membership
             local lists = NS.GetListsContainingToy(self.toyID)
             if #lists > 0 then
                 GameTooltip:AddLine(" ")
@@ -112,7 +92,6 @@ function NS.CreateIconGrid(opts)
 
             GameTooltip:Show()
 
-            -- Show action overlay on hover (not in "All" view)
             if listKey ~= "__all__" then
                 if opts.isTopGrid or self.isInList then
                     self.actionOverlay:SetTexture(NS.TEX_REMOVE)
@@ -131,7 +110,6 @@ function NS.CreateIconGrid(opts)
 
         btn:SetScript("OnClick", function(self)
             if not self.toyID then return end
-            -- Block interaction in "All" view
             local listKey = opts.getListKey and opts.getListKey() or "__all__"
             if listKey == "__all__" and not opts.isTopGrid then return end
 
@@ -145,7 +123,6 @@ function NS.CreateIconGrid(opts)
 
     container.pool = pool
 
-    -- Layout icons in a wrapping grid
     function container:Layout(toyList, inListSet, showUnobtained, selectedListKey)
         local width = container:GetWidth()
         if width <= 0 then width = NS.GRID_FALLBACK_WIDTH end
@@ -168,10 +145,8 @@ function NS.CreateIconGrid(opts)
                 btn.isOwned = info.owned
                 btn.isInList = inListSet and inListSet[toyID] or false
 
-                -- Icon texture
                 btn.icon:SetTexture(info.icon)
 
-                -- Owned vs unobtained visual
                 if info.owned then
                     btn.icon:SetDesaturated(false)
                     btn.icon:SetAlpha(1)
@@ -182,7 +157,6 @@ function NS.CreateIconGrid(opts)
                     btn.lockIcon:Show()
                 end
 
-                -- Checkmark + green tint on bottom grid for toys in list
                 if not container.isTopGrid and btn.isInList and selectedListKey ~= "__all__" then
                     btn.checkmark:Show()
                     if info.owned then
@@ -198,7 +172,6 @@ function NS.CreateIconGrid(opts)
                     btn.border:SetVertexColor(unpack(NS.COLOR_WHITE))
                 end
 
-                -- Position
                 local row = math.floor((visibleIdx - 1) / iconsPerRow)
                 local col = (visibleIdx - 1) % iconsPerRow
                 btn:ClearAllPoints()
@@ -207,7 +180,6 @@ function NS.CreateIconGrid(opts)
             end
         end
 
-        -- Hide unused buttons
         for i = visibleIdx + 1, poolSize do
             pool[i]:Hide()
             pool[i].toyID = nil
@@ -215,7 +187,6 @@ function NS.CreateIconGrid(opts)
 
         container.visibleCount = visibleIdx
 
-        -- Set container height
         local rows = math.ceil(visibleIdx / iconsPerRow)
         if rows < 1 then rows = 0 end
         local height = rows * (ICON_SIZE + ICON_GAP) - (rows > 0 and ICON_GAP or 0)

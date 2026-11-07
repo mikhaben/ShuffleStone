@@ -1,8 +1,3 @@
---[[
-    ShuffleStone - Hearthstone Toy Randomizer
-    UI/MainFrame.lua - Custom floating window (Cooldown Manager style)
-]]--
-
 local _, NS = ...
 
 local WINDOW_WIDTH = NS.WINDOW_WIDTH
@@ -11,18 +6,15 @@ local SECTION_GAP = NS.SECTION_GAP
 local selectedListKey = "__all__"
 local mainFrame = nil
 
--- Reusable buffers (avoids allocation per refresh/interaction)
 local topToysBuffer = {}
 local dropdownBuffer = {}
 
--- Get current in-list set for the selected list
 local function GetCurrentInListSet()
     if selectedListKey == "__all__" then return nil end
     local list = NS.GetListByName(selectedListKey)
     return list and list.toyIDs or nil
 end
 
--- Add/remove toy from current list
 local function ToggleToyInList(toyID, isInList, isTopGrid)
     if selectedListKey == "__all__" then return end
 
@@ -39,7 +31,6 @@ local function ToggleToyInList(toyID, isInList, isTopGrid)
     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 end
 
--- Build dropdown values for list selector (reuses buffer tables)
 local function GetListDropdownValues()
     local idx = 0
 
@@ -64,7 +55,6 @@ local function GetListDropdownValues()
     return dropdownBuffer
 end
 
--- Create the dropdown menu (WowStyle1 — modern WoW 11.0+ dropdown)
 local function CreateDropdown(parent)
     local dropdown = CreateFrame("DropdownButton", "ShuffleStoneListDropdown", parent, "WowStyle1DropdownTemplate")
     dropdown:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -32)
@@ -95,7 +85,6 @@ end
 function NS.CreateMainFrame()
     if mainFrame then return mainFrame end
 
-    -- Main window (via WindowFactory)
     local frame = NS.CreateWindow({
         name   = "ShuffleStoneFrame",
         title  = "ShuffleStone",
@@ -114,7 +103,6 @@ function NS.CreateMainFrame()
         end,
     })
 
-    -- Restore saved position
     frame:ClearAllPoints()
     frame:SetPoint(
         NS.db.windowPos.point or "CENTER",
@@ -126,14 +114,9 @@ function NS.CreateMainFrame()
 
     mainFrame = frame
 
-    -- ==========================================
-    -- HEADER: Dropdown + Show Unobtained + New List
-    -- ==========================================
-
     local dropdown = CreateDropdown(frame)
     frame.dropdown = dropdown
 
-    -- "+ New List" button (same row as dropdown, right-justified)
     local newListBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     newListBtn:SetSize(90, 22)
     newListBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -35)
@@ -144,7 +127,6 @@ function NS.CreateMainFrame()
 
     frame.newListBtn = newListBtn
 
-    -- Delete list button (trash icon, header row, left of New List)
     local deleteListBtn = CreateFrame("Button", nil, frame)
     deleteListBtn:SetSize(22, 22)
     deleteListBtn:SetPoint("LEFT", dropdown, "RIGHT", 6, 0)
@@ -188,11 +170,10 @@ function NS.CreateMainFrame()
     deleteListBtn:Hide()
     frame.deleteListBtn = deleteListBtn
 
-    -- Show Unobtained checkbox (will be positioned dynamically next to bottom header)
     local showUnobtainedCB = CreateFrame("CheckButton", "ShuffleStoneShowUnobtained", frame, "UICheckButtonTemplate")
     showUnobtainedCB:SetSize(24, 24)
     showUnobtainedCB:SetChecked(NS.db.showUnobtained)
-    showUnobtainedCB:Hide() -- positioned dynamically in RefreshMainFrame
+    showUnobtainedCB:Hide()
 
     local cbLabel = showUnobtainedCB:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     cbLabel:SetPoint("RIGHT", showUnobtainedCB, "LEFT", -2, 0)
@@ -206,27 +187,20 @@ function NS.CreateMainFrame()
 
     frame.showUnobtainedCB = showUnobtainedCB
 
-    -- ==========================================
-    -- LIST EDITOR ROW
-    -- ==========================================
-
     local editor = NS.CreateListEditor(frame)
     editor:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 0, -SECTION_GAP)
     editor:SetPoint("RIGHT", frame, "RIGHT", -10, 0)
 
-    -- Wire callbacks
     editor.onNameChanged = function(newName)
         if not newName or newName == "" then return end
         if selectedListKey == "__all__" then return end
-        if newName == selectedListKey then return end -- no change
+        if newName == selectedListKey then return end
 
-        -- Block reserved internal key
         if newName == "__all__" then
             editor.nameBox:SetText(selectedListKey)
             return
         end
 
-        -- Check duplicate
         if NS.GetListByName(newName) then
             print("|cffff8800ShuffleStone|r: List '" .. newName .. "' already exists.")
             editor.nameBox:SetText(selectedListKey)
@@ -239,13 +213,11 @@ function NS.CreateMainFrame()
             return
         end
 
-        -- Rename the list data
         local list = NS.GetListByName(selectedListKey)
         if list then
             local oldName = list.name
             list.name = newName
 
-            -- Destroy old button/macro, create new ones with correct frame name
             NS.RenameListButton(oldName, newName)
 
             selectedListKey = newName
@@ -268,7 +240,6 @@ function NS.CreateMainFrame()
 
         if not InCombatLockdown() then
             if checked then
-                -- Turning ON: update icon to current toy on the button
                 local btn = NS.buttons[selectedListKey]
                 if btn then
                     local currentToy = btn:GetAttribute("toy")
@@ -277,7 +248,6 @@ function NS.CreateMainFrame()
                     end
                 end
             else
-                -- Turning OFF: rebuild body and reset to static icon
                 NS.RebuildMacroBody(selectedListKey)
                 NS.SetMacroIcon(selectedListKey, NS.GetListIcon(selectedListKey))
             end
@@ -285,10 +255,6 @@ function NS.CreateMainFrame()
     end
 
     frame.editor = editor
-
-    -- ==========================================
-    -- "IN THIS LIST" SECTION (top grid, shown for custom lists)
-    -- ==========================================
 
     local topSectionHeader = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     topSectionHeader:SetPoint("TOPLEFT", editor, "BOTTOMLEFT", 2, -SECTION_GAP)
@@ -305,7 +271,6 @@ function NS.CreateMainFrame()
     topGrid:SetPoint("RIGHT", frame, "RIGHT", -14, 0)
     frame.topGrid = topGrid
 
-    -- Empty state text
     local emptyText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     emptyText:SetPoint("TOPLEFT", topSectionHeader, "BOTTOMLEFT", 0, -12)
     emptyText:SetText("Click hearthstones below to add them to this list")
@@ -313,16 +278,11 @@ function NS.CreateMainFrame()
     emptyText:Hide()
     frame.emptyText = emptyText
 
-    -- ==========================================
-    -- "ALL HEARTHSTONES" SECTION (bottom grid)
-    -- ==========================================
-
     local bottomSectionHeader = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    bottomSectionHeader:SetPoint("TOPLEFT", editor, "BOTTOMLEFT", 2, -SECTION_GAP) -- default anchor
+    bottomSectionHeader:SetPoint("TOPLEFT", editor, "BOTTOMLEFT", 2, -SECTION_GAP)
     bottomSectionHeader:SetTextColor(unpack(NS.COLOR_YELLOW))
     frame.bottomSectionHeader = bottomSectionHeader
 
-    -- Bottom grid (direct child of frame — no scroll)
     local bottomGrid = NS.CreateIconGrid({
         parent = frame,
         isTopGrid = false,
@@ -336,7 +296,6 @@ function NS.CreateMainFrame()
     return frame
 end
 
--- Refresh the entire UI based on current state
 function NS.RefreshMainFrame()
     if not mainFrame or not mainFrame:IsShown() then return end
 
@@ -344,49 +303,38 @@ function NS.RefreshMainFrame()
     local inListSet = GetCurrentInListSet()
     local showUnobtained = NS.db.showUnobtained
 
-    -- If selected list was deleted, fall back to "__all__"
     if not isAllList and not inListSet then
         selectedListKey = "__all__"
         isAllList = true
         inListSet = nil
     end
 
-    -- Update dropdown text
     if isAllList then
         mainFrame.dropdown:SetText(NS.ALL_DISPLAY_NAME)
     else
         mainFrame.dropdown:SetText(selectedListKey)
     end
 
-    -- Show/hide delete button
     if isAllList then
         mainFrame.deleteListBtn:Hide()
     else
         mainFrame.deleteListBtn:Show()
     end
 
-    -- Update editor
     mainFrame.editor:SetListKey(selectedListKey)
 
-    -- ==========================================
-    -- TOP GRID (In This List)
-    -- ==========================================
-
     if isAllList then
-        -- Hide top section for "All"
         mainFrame.topSectionHeader:SetText("")
         mainFrame.topSectionHeader:Hide()
         mainFrame.topGrid:Hide()
         mainFrame.emptyText:Hide()
 
-        -- Position bottom section right after editor (+ hint below)
         mainFrame.bottomSectionHeader:ClearAllPoints()
         mainFrame.bottomSectionHeader:SetPoint("TOPLEFT", mainFrame.editor, "BOTTOMLEFT", 2, -SECTION_GAP)
     else
         mainFrame.topSectionHeader:Show()
         mainFrame.topGrid:Show()
 
-        -- Build top grid: all toys IN this list (including unobtained)
         wipe(topToysBuffer)
         local inListCount = 0
         if inListSet then
@@ -410,7 +358,6 @@ function NS.RefreshMainFrame()
             mainFrame.topGrid:Layout(topToysBuffer, inListSet, true, selectedListKey)
         end
 
-        -- Position bottom section after top grid
         mainFrame.bottomSectionHeader:ClearAllPoints()
         if inListCount > 0 then
             mainFrame.bottomSectionHeader:SetPoint("TOPLEFT", mainFrame.topGrid, "BOTTOMLEFT", 0, -SECTION_GAP)
@@ -418,10 +365,6 @@ function NS.RefreshMainFrame()
             mainFrame.bottomSectionHeader:SetPoint("TOPLEFT", mainFrame.emptyText, "BOTTOMLEFT", 0, -SECTION_GAP)
         end
     end
-
-    -- ==========================================
-    -- BOTTOM GRID (All Hearthstones)
-    -- ==========================================
 
     local ownedCount = #NS.ownedToyIDs
     local headerText = "ALL HEARTHSTONES (" .. ownedCount .. " owned)"
@@ -431,13 +374,11 @@ function NS.RefreshMainFrame()
     mainFrame.bottomSectionHeader:SetText(headerText)
     mainFrame.bottomSectionHeader:Show()
 
-    -- Position unobtained checkbox next to bottom section header (right-justified)
     mainFrame.showUnobtainedCB:ClearAllPoints()
     mainFrame.showUnobtainedCB:SetPoint("RIGHT", mainFrame, "RIGHT", -10, 0)
     mainFrame.showUnobtainedCB:SetPoint("TOP", mainFrame.bottomSectionHeader, "TOP", 0, 4)
     mainFrame.showUnobtainedCB:Show()
 
-    -- Position and layout bottom grid directly
     mainFrame.bottomGrid:ClearAllPoints()
     mainFrame.bottomGrid:SetPoint("TOPLEFT", mainFrame.bottomSectionHeader, "BOTTOMLEFT", 0, -6)
     mainFrame.bottomGrid:SetPoint("RIGHT", mainFrame, "RIGHT", -14, 0)
@@ -447,7 +388,6 @@ function NS.RefreshMainFrame()
     mainFrame.bottomGrid:SetWidth(gridWidth)
     mainFrame.bottomGrid:Layout(NS.HEARTHSTONE_TOYS, inListSet, showUnobtained, selectedListKey)
 
-    -- Dynamic window height: fit content without excess empty space
     local editorBottom = mainFrame.editor:GetBottom()
     local gridHeight = mainFrame.bottomGrid:GetHeight()
     local frameTop = mainFrame:GetTop()
@@ -462,7 +402,6 @@ function NS.RefreshMainFrame()
     end
 end
 
--- Toggle main frame visibility
 function NS.ToggleMainFrame()
     if not mainFrame then
         NS.CreateMainFrame()
@@ -476,42 +415,35 @@ function NS.ToggleMainFrame()
     end
 end
 
--- Create a new list flow
 function NS.CreateNewList()
     if InCombatLockdown() then
         print("|cffff8800ShuffleStone|r: Cannot create lists during combat.")
         return
     end
 
-    -- Create with default name
     local baseName = "New List"
     local name = baseName
     local counter = 1
 
-    -- Find unique name
     while NS.GetListByName(name) do
         counter = counter + 1
         name = baseName .. " " .. counter
     end
 
-    -- Seed with 1 random owned hearthstone
     local seedToys = {}
     if NS.ownedToyIDs and #NS.ownedToyIDs > 0 then
         local randomID = NS.ownedToyIDs[math.random(1, #NS.ownedToyIDs)]
         seedToys[randomID] = true
     end
 
-    -- Create the list
     table.insert(NS.db.lists, {
         name = name,
         icon = NS.DEFAULT_ICON,
         toyIDs = seedToys,
     })
 
-    -- Create button + macro
     NS.CreateListButton(name)
 
-    -- Select the new list
     selectedListKey = name
     NS.HideIconPicker()
     NS.RefreshMainFrame()

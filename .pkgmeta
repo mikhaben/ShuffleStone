@@ -20,6 +20,9 @@ ignore:
   - .pkgmeta
   - .gitignore
   - .luacheckrc
+  - check.sh
+  - sgconfig.yml
+  - lint-rules
   - .env
   - .env.example
   - .claude

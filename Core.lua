@@ -1,17 +1,10 @@
---[[
-    ShuffleStone - Hearthstone Toy Randomizer
-    Core.lua - Namespace, defaults, database, events, slash commands
-]]--
-
 local AddonName, NS = ...
 _G.ShuffleStone = NS
 
--- Version info
 NS.Title = C_AddOns.GetAddOnMetadata(AddonName, "Title")
 NS.Version = C_AddOns.GetAddOnMetadata(AddonName, "Version")
 NS.Author = C_AddOns.GetAddOnMetadata(AddonName, "Author")
 
--- Default saved variables structure
 NS.defaults = {
     lists = {},
     rotationState = {},
@@ -23,7 +16,6 @@ NS.defaults = {
     allIconToyID = nil,
 }
 
--- Deep copy (local, only used within Core)
 local function DeepCopy(orig)
     if type(orig) ~= "table" then
         return orig
@@ -35,7 +27,6 @@ local function DeepCopy(orig)
     return copy
 end
 
--- Merge saved with defaults (add missing keys)
 local function MergeDefaults(saved, defaults)
     for k, v in pairs(defaults) do
         if saved[k] == nil then
@@ -51,7 +42,6 @@ local function MergeDefaults(saved, defaults)
     return saved
 end
 
--- Initialize database
 local function InitializeDatabase()
     if not ShuffleStoneDB then
         ShuffleStoneDB = DeepCopy(NS.defaults)
@@ -61,7 +51,6 @@ local function InitializeDatabase()
     NS.db = ShuffleStoneDB
 end
 
--- Event frame
 local eventFrame = CreateFrame("Frame")
 
 eventFrame:SetScript("OnEvent", function(self, event, ...)
@@ -70,33 +59,27 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- PLAYER_LOGIN
 function NS:PLAYER_LOGIN()
     InitializeDatabase()
 
-    -- Scan toys
     if NS.ScanToys then
         NS.ScanToys()
     end
 
-    -- Initialize secure buttons + macros
     if NS.InitializeAllButtons then
         NS.InitializeAllButtons()
     end
 
-    -- Initialize UI (pre-create main frame hidden)
     if NS.CreateMainFrame then
         NS.CreateMainFrame()
     end
 
-    -- Register settings panel
     if NS.InitializeSettings then
         NS.InitializeSettings()
     end
 
 end
 
--- Shared helper: rescan toys, update rotations, refresh UI
 local function RescanAndRefresh(resetRotations)
     if not NS.db then return end
     if NS.ScanToys then NS.ScanToys() end
@@ -109,8 +92,6 @@ local function RescanAndRefresh(resetRotations)
     if NS.RefreshMainFrame then NS.RefreshMainFrame() end
 end
 
--- Rescan toys when toy box data becomes available from the server
--- Debounced: TOYS_UPDATED fires in bursts, coalesce into one end-of-frame rescan
 local pendingRescan = false
 function NS:TOYS_UPDATED()
     if pendingRescan then return end
@@ -121,18 +102,15 @@ function NS:TOYS_UPDATED()
     end)
 end
 
--- Rescan when player obtains a new toy
 function NS:NEW_TOY_ADDED()
-    pendingRescan = true -- suppress redundant TOYS_UPDATED that follows
+    pendingRescan = true
     RescanAndRefresh(true)
 end
 
--- Register events
 eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:RegisterEvent("TOYS_UPDATED")
 eventFrame:RegisterEvent("NEW_TOY_ADDED")
 
--- Slash commands
 SLASH_SHUFFLESTONE1 = "/shufflestone"
 SLASH_SHUFFLESTONE2 = "/ss"
 
@@ -150,7 +128,6 @@ SlashCmdList["SHUFFLESTONE"] = function(msg)
     end
 end
 
--- Debug info dump (/ss debug)
 function NS.PrintDebugInfo()
     local p = function(msg) print("|cff00ff00[SS]|r " .. msg) end
 
@@ -158,7 +135,6 @@ function NS.PrintDebugInfo()
     p("Owned hearthstones: " .. (NS.ownedToyIDs and #NS.ownedToyIDs or 0))
     p("Custom lists: " .. (NS.db and #NS.db.lists or 0))
 
-    -- List details
     if NS.db then
         for _, list in ipairs(NS.db.lists) do
             local count = 0
@@ -172,7 +148,6 @@ function NS.PrintDebugInfo()
         end
     end
 
-    -- Macros
     p("Macros:")
     for _, macroName in pairs(NS.macroNames) do
         local macroID = GetMacroIndexByName(macroName)
@@ -180,12 +155,10 @@ function NS.PrintDebugInfo()
         p("  " .. macroName .. " — " .. status)
     end
 
-    -- Buttons
     local btnCount = 0
     for _ in pairs(NS.buttons) do btnCount = btnCount + 1 end
     p("Secure buttons: " .. btnCount)
 
-    -- Rotation state
     if NS.db and NS.db.rotationState then
         for listKey, state in pairs(NS.db.rotationState) do
             local remaining = state.remaining and #state.remaining or 0
